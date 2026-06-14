@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/transaction_provider.dart';
 
 class AccountInformationPage extends StatefulWidget {
-  const AccountInformationPage({Key? key}) : super(key: key);
+  final String accountNumber;
+  final String balance;
+  final bool isBalanceVisible;
+
+  const AccountInformationPage({
+    Key? key,
+    required this.accountNumber,
+    required this.balance,
+    required this.isBalanceVisible,
+  }) : super(key: key);
 
   @override
   State<AccountInformationPage> createState() => _AccountInformationPageState();
@@ -44,63 +55,66 @@ class _AccountInformationPageState extends State<AccountInformationPage>
           _buildBlueBackground(),
 
           SafeArea(
-            bottom:
-                false, // Membiarkan container putih memanjang sampai bawah layar
+            bottom: false,
             child: Column(
               children: [
-                // 2. Custom App Bar
                 _buildAppBar(context),
-
-                // 3. Account Card Information
-                const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 12.0,
-                  ),
-                  child: AccountInfoCard(),
-                ),
-
-                // 4. Container Putih Bottom Sheet
                 Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        // 5. Tab Bar
-                        _buildTabBar(),
-
-                        // 6. Search & Filter Bar
-                        _buildSearchAndFilter(),
-
-                        // 7. TabBarView untuk konten tiap tab
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _buildTransactionList(),
-                              const Center(child: Text('Card Information')),
-                              const Center(child: Text('Pocket Information')),
-                            ],
-                          ),
+                  child: NestedScrollView(
+                    headerSliverBuilder:
+                        (BuildContext context, bool innerBoxIsScrolled) {
+                          return [
+                            SliverPersistentHeader(
+                              pinned: true,
+                              delegate: _AccountCardDelegate(
+                                accountNumber: widget.accountNumber,
+                                balance: widget.balance,
+                                isBalanceVisible: widget.isBalanceVisible,
+                                expandedHeight: 220.0,
+                                collapsedHeight: 70.0,
+                              ),
+                            ),
+                          ];
+                        },
+                    body: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+                      ),
+                      child: Column(
+                        children: [
+                          // 5. Tab Bar
+                          _buildTabBar(),
+
+                          // 6. Search & Filter Bar
+                          _buildSearchAndFilter(),
+
+                          // 7. TabBarView untuk konten tiap tab
+                          Expanded(
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                _buildTransactionList(),
+                                const Center(child: Text('Card Information')),
+                                const Center(child: Text('Pocket Information')),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ), // Closes Container (body)
+                  ), // Closes NestedScrollView
+                ), // Closes Expanded
+              ], // Closes children of Column
+            ), // Closes Column
+          ), // Closes SafeArea
+        ], // Closes children of Stack
+      ), // Closes Stack
+    ); // Closes Scaffold
+  } // Closes build method
 
   // --- Komponen Internal Halaman ---
 
@@ -108,15 +122,9 @@ class _AccountInformationPageState extends State<AccountInformationPage>
     return Container(
       height: 350,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF004B87), // Biru gelap
-            Color(0xFF0066B3), // Biru agak terang
-            Color(0xFF003366), // Biru sangat gelap (menambah dimensi)
-          ],
-          stops: [0.0, 0.5, 1.0],
+        image: DecorationImage(
+          image: AssetImage('assets/images/background.png'),
+          fit: BoxFit.cover,
         ),
       ),
     );
@@ -137,6 +145,7 @@ class _AccountInformationPageState extends State<AccountInformationPage>
           const Text(
             'Account Information',
             style: TextStyle(
+              fontFamily: 'MyBcaFont',
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.w600,
@@ -238,65 +247,151 @@ class _AccountInformationPageState extends State<AccountInformationPage>
       );
     }
 
-    // Merender data asli jika selesai dimuat
-    return ListView(
+    // Ambil data transaksi dari Provider
+    final provider = Provider.of<TransactionProvider>(context);
+    final transactions = provider.transactions;
+
+    if (transactions.isEmpty) {
+      return const Center(
+        child: Text(
+          'Tidak ada transaksi.\nUpload e-Statement di Pengaturan.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    // Merender data dari PDF jika tersedia
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      children: const [
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text(
-            'June',
-            style: TextStyle(
-              color: Color(0xFF003366),
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+      itemCount: transactions.length,
+      itemBuilder: (context, index) {
+        final tx = transactions[index];
+        return TransactionTile(
+          dateOrStatus: tx.dateOrStatus,
+          title: tx.title,
+          subtitle: tx.subtitle,
+          amount: tx.amount,
+          isDebit: tx.isDebit,
+        );
+      },
+    );
+  }
+}
+
+class _AccountCardDelegate extends SliverPersistentHeaderDelegate {
+  final String accountNumber;
+  final String balance;
+  final bool isBalanceVisible;
+  final double expandedHeight;
+  final double collapsedHeight;
+
+  _AccountCardDelegate({
+    required this.accountNumber,
+    required this.balance,
+    required this.isBalanceVisible,
+    required this.expandedHeight,
+    required this.collapsedHeight,
+  });
+
+  @override
+  double get maxExtent => expandedHeight;
+
+  @override
+  double get minExtent => collapsedHeight;
+
+  @override
+  bool shouldRebuild(covariant _AccountCardDelegate oldDelegate) {
+    return oldDelegate.accountNumber != accountNumber ||
+        oldDelegate.balance != balance ||
+        oldDelegate.isBalanceVisible != isBalanceVisible;
+  }
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    double progress = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
+    return ClipRect(
+      child: Container(
+        padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 12.0),
+        alignment: Alignment.topCenter,
+        child: OverflowBox(
+          alignment: Alignment.topCenter,
+          maxHeight: double.infinity,
+          child: AccountInfoCard(
+            accountNumber: accountNumber,
+            balance: balance,
+            isBalanceVisible: isBalanceVisible,
+            shrinkProgress: progress,
           ),
         ),
-        TransactionTile(
-          dateOrStatus: 'PEND',
-          title: 'TGL: 0606 QR 914 00000.00DIGAWA cof',
-          subtitle: 'TRANSAKSI DEBIT',
-          amount: 'IDR 20,000.00',
-          isDebit: true,
-        ),
-        TransactionTile(
-          dateOrStatus: 'PEND',
-          title: 'TGL: 0606 QR 014 00000.00HHB H05 PA',
-          subtitle: 'TRANSAKSI DEBIT',
-          amount: 'IDR 66,000.00',
-          isDebit: true,
-        ),
-        TransactionTile(
-          dateOrStatus: 'PEND',
-          title: '0606/FTSCY/WS95271 85000.00\nRAMADHAN SETIAWAN',
-          subtitle: 'TRSF E-BANKING DB',
-          amount: 'IDR 85,000.00',
-          isDebit: true,
-        ),
-        TransactionTile(
-          dateOrStatus: 'PEND',
-          title: 'TGL: 0606 QR 009 00000.00SSB Cab Te',
-          subtitle: 'TRANSAKSI DEBIT',
-          amount: 'IDR 15,500.00',
-          isDebit: true,
-        ),
-        TransactionTile(
-          dateOrStatus: '05\nJun',
-          title: 'BIAYA TXN KE 535 RIDHO ADHA MAULANA\nMyBCA',
-          subtitle: 'BI FAST DB',
-          amount: 'IDR 2,500.00',
-          isDebit: true,
-        ),
-      ],
+      ),
     );
   }
 }
 
 // --- Widget Terpisah (Clean Architecture UI) ---
 
-class AccountInfoCard extends StatelessWidget {
-  const AccountInfoCard({Key? key}) : super(key: key);
+class AccountInfoCard extends StatefulWidget {
+  final String accountNumber;
+  final String balance;
+  final bool isBalanceVisible;
+  final double shrinkProgress;
+
+  const AccountInfoCard({
+    Key? key,
+    required this.accountNumber,
+    required this.balance,
+    required this.isBalanceVisible,
+    this.shrinkProgress = 0.0,
+  }) : super(key: key);
+
+  @override
+  State<AccountInfoCard> createState() => _AccountInfoCardState();
+}
+
+class _AccountInfoCardState extends State<AccountInfoCard> {
+  late bool _isBalanceVisible;
+
+  @override
+  void initState() {
+    super.initState();
+    _isBalanceVisible = widget.isBalanceVisible;
+  }
+
+  String _formatBalance(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return '0';
+    String result = '';
+    int count = 0;
+    for (int i = digits.length - 1; i >= 0; i--) {
+      if (count != 0 && count % 3 == 0) {
+        result = '.$result';
+      }
+      result = digits[i] + result;
+      count++;
+    }
+    return result;
+  }
+
+  String _formatAccountNumber(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return '';
+    String result = '';
+    for (int i = 0; i < digits.length; i++) {
+      if (i > 0 && i % 3 == 0) {
+        if (digits.length - i == 1) {
+        } else {
+          result += ' - ';
+        }
+      }
+      result += digits[i];
+    }
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -314,12 +409,17 @@ class AccountInfoCard extends StatelessWidget {
         children: [
           // Header Kartu
           Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: const BoxDecoration(
-              color: Color(0xFF5D8AA8), // Warna Muted Teal/Blue
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6A8EAE), // Adjust to grey-blue in image
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: const Radius.circular(16),
+                topRight: const Radius.circular(16),
+                bottomLeft: Radius.circular(16 * widget.shrinkProgress),
+                bottomRight: Radius.circular(16 * widget.shrinkProgress),
               ),
             ),
             child: Row(
@@ -336,32 +436,39 @@ class AccountInfoCard extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        '024 - 021 - 9280',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
-                        ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            _formatAccountNumber(widget.accountNumber),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.copy, color: Colors.white, size: 14),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.copy, color: Colors.white, size: 18),
               ],
             ),
           ),
 
           // Body Kartu
           Container(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16),
               ),
             ),
             child: Column(
@@ -369,16 +476,16 @@ class AccountInfoCard extends StatelessWidget {
               children: [
                 Text(
                   'Active Balance',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: const [
-                        Text(
+                      children: [
+                        const Text(
                           'IDR ',
                           style: TextStyle(
                             fontSize: 18,
@@ -387,32 +494,45 @@ class AccountInfoCard extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '• • • • • • •',
+                          _isBalanceVisible
+                              ? _formatBalance(widget.balance)
+                              : '••••••••',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF333333),
+                            letterSpacing: _isBalanceVisible ? 0 : 2.0,
+                            color: const Color(0xFF333333),
                           ),
                         ),
                       ],
                     ),
-                    Icon(
-                      Icons.visibility_off,
-                      color: Colors.blue.shade800,
-                      size: 20,
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Icon(
+                        _isBalanceVisible
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        color: const Color(0xFF005BAC),
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isBalanceVisible = !_isBalanceVisible;
+                        });
+                      },
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 2),
                 Text(
                   'TAHAPAN - IDR',
                   style: TextStyle(
-                    color: Colors.grey.shade800,
+                    color: Colors.grey.shade700,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
                 Text(
                   '06 Jun 2026 22:39:11 UTC+7',
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
@@ -456,16 +576,8 @@ class TransactionTile extends StatelessWidget {
         children: [
           // Kolom Kiri: Tanggal / Status PEND
           SizedBox(
-            width: 40,
-            child: Text(
-              dateOrStatus,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.bold,
-                fontSize: dateOrStatus == 'PEND' ? 12 : 14,
-              ),
-            ),
+            width: 44, // Slightly wider to fit the year
+            child: _buildDateOrStatus(),
           ),
           const SizedBox(width: 16),
 
@@ -508,6 +620,52 @@ class TransactionTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildDateOrStatus() {
+    List<String> parts = dateOrStatus.split('\n');
+    if (parts.length == 3) {
+      return Column(
+        children: [
+          Text(
+            parts[0],
+            style: const TextStyle(
+              color: Color(0xFF003366),
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            parts[1].toUpperCase(),
+            style: const TextStyle(
+              color: Color(0xFF003366),
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            parts[2],
+            style: const TextStyle(
+              color: Color(0xFF003366),
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Text(
+        dateOrStatus,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Colors.grey.shade500,
+          fontWeight: FontWeight.bold,
+          fontSize: dateOrStatus == 'PEND' ? 12 : 14,
+        ),
+      );
+    }
   }
 }
 

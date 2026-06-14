@@ -50,3 +50,9 @@ app.*.map.json
 .vscode/
 # Added by code-review-graph
 .code-review-graph/
+
+parse_test.dart
+parse_test2.dart
+pdf_text_output.txt
+pdf_text_layout.txt
+assets/pdf

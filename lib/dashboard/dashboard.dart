@@ -327,7 +327,11 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AccountInformationPage(),
+                      builder: (context) => AccountInformationPage(
+                        accountNumber: accountNumber,
+                        balance: balance,
+                        isBalanceVisible: isBalanceVisible,
+                      ),
                     ),
                   );
                 },
@@ -992,7 +996,22 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(Icons.home, 'Home', isSelected: true),
-              _buildNavItem(Icons.receipt_long, 'Activity'),
+              _buildNavItem(
+                Icons.receipt_long,
+                'Activity',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AccountInformationPage(
+                        accountNumber: accountNumber,
+                        balance: balance,
+                        isBalanceVisible: isBalanceVisible,
+                      ),
+                    ),
+                  );
+                },
+              ),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1020,7 +1039,22 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                 ],
               ),
               _buildNavItem(Icons.star_border, 'For You'),
-              _buildNavItem(Icons.person_outline, 'My Account'),
+              _buildNavItem(
+                Icons.person_outline, 
+                'My Account',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SettingsPage(
+                        initialName: 'GUSTI FARHAN MUTTAQIN',
+                        initialAccountNumber: accountNumber,
+                        initialBalance: balance,
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -1028,25 +1062,28 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, {bool isSelected = false}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isSelected ? Colors.white : Colors.white60,
-          size: 24 * scale,
-        ),
-        SizedBox(height: 4 * scale),
-        Text(
-          label,
-          style: GoogleFonts.openSans(
+  Widget _buildNavItem(IconData icon, String label, {bool isSelected = false, VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
             color: isSelected ? Colors.white : Colors.white60,
-            fontSize: 10 * scale,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            size: 24 * scale,
           ),
-        ),
-      ],
+          SizedBox(height: 4 * scale),
+          Text(
+            label,
+            style: GoogleFonts.openSans(
+              color: isSelected ? Colors.white : Colors.white60,
+              fontSize: 10 * scale,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
