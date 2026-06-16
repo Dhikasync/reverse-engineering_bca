@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import '../providers/transaction_provider.dart';
 
+// --- IMPORT FILE HALAMAN BARU ---
+import 'e_statement_page.dart';
+
 class AccountInformationPage extends StatefulWidget {
   final String accountNumber;
   final String balance;
@@ -164,7 +167,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                                 fontWeight: FontWeight.normal,
                                 fontSize: 12,
                               ),
-                              // --- TAB DIKEMBALIKAN 100% STATIS ---
                               tabs: const [
                                 Tab(
                                   child: FittedBox(
@@ -243,19 +245,32 @@ class _AccountInformationPageState extends State<AccountInformationPage>
             ),
           ),
           const SizedBox(width: 12),
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.receipt_long,
-              color: Colors.grey.shade700,
-              size: 20,
+
+          // --- PERUBAHAN NAVIGASI HALAMAN E-STATEMENT DI SINI ---
+          GestureDetector(
+            onTap: () {
+              // Buka halaman e-Statement secara penuh (Full Page)
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const EStatementPage()),
+              );
+            },
+            child: Container(
+              height: 40,
+              width: 40,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.receipt_long,
+                color: Colors.grey.shade700,
+                size: 20,
+              ),
             ),
           ),
+
+          // --------------------------------------------------------
           const SizedBox(width: 8),
           Container(
             height: 40,
@@ -297,15 +312,12 @@ class _AccountInformationPageState extends State<AccountInformationPage>
       );
     }
 
-    // Menggunakan length + 1 untuk menempatkan Teks Bulan di posisi index 0 (Paling Atas)
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       itemCount: transactions.length + 1,
       itemBuilder: (context, index) {
-        // --- PERBAIKAN TEKS BULAN DINAMIS ---
         if (index == 0) {
           if (provider.activeMonth.isNotEmpty) {
-            // Memastikan format huruf besar di awal untuk semua kata (misal: "MEI 2023" jadi "Mei 2023")
             String rawMonth = provider.activeMonth;
             String displayMonth = rawMonth
                 .split(' ')
@@ -330,9 +342,7 @@ class _AccountInformationPageState extends State<AccountInformationPage>
           }
           return const SizedBox.shrink();
         }
-        // ------------------------------------
 
-        // Index dikurangi 1 karena index 0 dipakai untuk teks bulan
         final tx = transactions[index - 1];
         return TransactionTile(
           dateOrStatus: tx.dateOrStatus,
@@ -567,7 +577,6 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
           borderRadius: BorderRadius.circular(dynamicRadius),
           child: Stack(
             children: [
-              // 1. Bagian Putih (Active Balance)
               Positioned(
                 top: 60 - (60 * widget.shrinkProgress),
                 left: 0,
@@ -664,7 +673,6 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                 ),
               ),
 
-              // 2. Bagian Biru (Account No.)
               Positioned(
                 top: 0,
                 left: 0,
@@ -800,7 +808,7 @@ class TransactionTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            parts[0], // TANGGAL
+            parts[0],
             style: GoogleFonts.openSans(
               color: const Color(0xFF333333).withOpacity(0.5),
               fontWeight: FontWeight.w500,

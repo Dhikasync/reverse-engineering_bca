@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
-// --- TAMBAHAN BARU: Import file service agar bisa mengambil variabel statisnya ---
 import '../services/pdf_parser_service.dart';
 
 class TransactionProvider with ChangeNotifier {
@@ -10,9 +9,21 @@ class TransactionProvider with ChangeNotifier {
   String _activeMonth = "";
   String _activeYear = "";
 
+  // Menyimpan daftar bulan dari PDF yang pernah di-upload
+  final List<String> _uploadedMonths = [];
+
   List<TransactionModel> get transactions => _transactions;
   String get activeMonth => _activeMonth;
   String get activeYear => _activeYear;
+
+  // Getter untuk daftar bulan. Jika belum ada PDF yang di-upload,
+  // kita tampilkan dummy 3 bulan sebagai default (pajangan).
+  List<String> get uploadedMonths {
+    if (_uploadedMonths.isEmpty) {
+      return ["Agustus 2023", "Juli 2023", "Juni 2023"];
+    }
+    return _uploadedMonths;
+  }
 
   // Fungsi pintar untuk mencegah data bertumpuk beda bulan
   void processNewPdfTransactions(
@@ -24,9 +35,20 @@ class TransactionProvider with ChangeNotifier {
         (_activeMonth != pdfMonth || _activeYear != pdfYear)) {
       _transactions.clear();
     }
+
     _activeMonth = pdfMonth;
     _activeYear = pdfYear;
     _transactions.addAll(newTransactions);
+
+    // Tambahkan bulan ke daftar riwayat jika belum ada
+    String formattedMonth = "$pdfMonth $pdfYear".trim();
+    if (!_uploadedMonths.contains(formattedMonth)) {
+      _uploadedMonths.insert(
+        0,
+        formattedMonth,
+      ); // Insert di awal agar yang terbaru paling atas
+    }
+
     notifyListeners();
   }
 
@@ -34,6 +56,12 @@ class TransactionProvider with ChangeNotifier {
     _transactions = newTransactions;
     if (PdfParserService.detectedMonth.isNotEmpty) {
       _activeMonth = "${PdfParserService.detectedMonth}".trim();
+
+      String formattedMonth = "$_activeMonth ${PdfParserService.detectedYear}"
+          .trim();
+      if (!_uploadedMonths.contains(formattedMonth)) {
+        _uploadedMonths.insert(0, formattedMonth);
+      }
     }
     notifyListeners();
   }
@@ -43,7 +71,6 @@ class TransactionProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // --- FITUR BARU UNTUK EDIT / UPDATE TRANSAKSI ---
   void updateTransaction(int index, TransactionModel updatedTransaction) {
     if (index >= 0 && index < _transactions.length) {
       _transactions[index] = updatedTransaction;
@@ -51,7 +78,6 @@ class TransactionProvider with ChangeNotifier {
     }
   }
 
-  // --- FITUR BARU UNTUK HAPUS TRANSAKSI ---
   void deleteTransaction(int index) {
     if (index >= 0 && index < _transactions.length) {
       _transactions.removeAt(index);
