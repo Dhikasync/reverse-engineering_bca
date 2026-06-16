@@ -59,55 +59,53 @@ class _AccountInformationPageState extends State<AccountInformationPage>
             child: Column(
               children: [
                 _buildAppBar(context),
+                
+                // 2. Account Info Card (Fixed position, no sliding)
+                Container(
+                  height: 220.0, // Matches the old expandedHeight to preserve the exact same gap
+                  padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 12.0),
+                  alignment: Alignment.topCenter,
+                  child: AccountInfoCard(
+                    accountNumber: widget.accountNumber,
+                    balance: widget.balance,
+                    isBalanceVisible: widget.isBalanceVisible,
+                    shrinkProgress: 0.0, // No shrinking
+                  ),
+                ),
+
+                // 3. White Container (Fixed position, only list inside scrolls)
                 Expanded(
-                  child: NestedScrollView(
-                    headerSliverBuilder:
-                        (BuildContext context, bool innerBoxIsScrolled) {
-                          return [
-                            SliverPersistentHeader(
-                              pinned: true,
-                              delegate: _AccountCardDelegate(
-                                accountNumber: widget.accountNumber,
-                                balance: widget.balance,
-                                isBalanceVisible: widget.isBalanceVisible,
-                                expandedHeight: 220.0,
-                                collapsedHeight: 70.0,
-                              ),
-                            ),
-                          ];
-                        },
-                    body: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
                       ),
-                      child: Column(
-                        children: [
-                          // 5. Tab Bar
-                          _buildTabBar(),
+                    ),
+                    child: Column(
+                      children: [
+                        // 5. Tab Bar
+                        _buildTabBar(),
 
-                          // 6. Search & Filter Bar
-                          _buildSearchAndFilter(),
+                        // 6. Search & Filter Bar
+                        _buildSearchAndFilter(),
 
-                          // 7. TabBarView untuk konten tiap tab
-                          Expanded(
-                            child: TabBarView(
-                              controller: _tabController,
-                              children: [
-                                _buildTransactionList(),
-                                const Center(child: Text('Card Information')),
-                                const Center(child: Text('Pocket Information')),
-                              ],
-                            ),
+                        // 7. TabBarView untuk konten tiap tab (Scrollable content)
+                        Expanded(
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _buildTransactionList(),
+                              const Center(child: Text('Card Information')),
+                              const Center(child: Text('Pocket Information')),
+                            ],
                           ),
-                        ],
-                      ),
-                    ), // Closes Container (body)
-                  ), // Closes NestedScrollView
-                ), // Closes Expanded
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ], // Closes children of Column
             ), // Closes Column
           ), // Closes SafeArea
@@ -119,28 +117,23 @@ class _AccountInformationPageState extends State<AccountInformationPage>
   // --- Komponen Internal Halaman ---
 
   Widget _buildBlueBackground() {
-    return Container(
+    return Image.asset(
+      'assets/images/background.png',
+      fit: BoxFit.cover,
+      width: double.infinity,
       height: 350,
-      decoration: const BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/images/background.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
+      alignment: Alignment.topCenter,
     );
   }
 
   Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+    return SizedBox(
+      height: 56.0,
       child: Row(
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: () {
-              // Kembali ke halaman Dashboard
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
           ),
           const Text(
             'Account Information',
@@ -278,62 +271,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
     );
   }
 }
-
-class _AccountCardDelegate extends SliverPersistentHeaderDelegate {
-  final String accountNumber;
-  final String balance;
-  final bool isBalanceVisible;
-  final double expandedHeight;
-  final double collapsedHeight;
-
-  _AccountCardDelegate({
-    required this.accountNumber,
-    required this.balance,
-    required this.isBalanceVisible,
-    required this.expandedHeight,
-    required this.collapsedHeight,
-  });
-
-  @override
-  double get maxExtent => expandedHeight;
-
-  @override
-  double get minExtent => collapsedHeight;
-
-  @override
-  bool shouldRebuild(covariant _AccountCardDelegate oldDelegate) {
-    return oldDelegate.accountNumber != accountNumber ||
-        oldDelegate.balance != balance ||
-        oldDelegate.isBalanceVisible != isBalanceVisible;
-  }
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    double progress = (shrinkOffset / (maxExtent - minExtent)).clamp(0.0, 1.0);
-    return ClipRect(
-      child: Container(
-        padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 12.0),
-        alignment: Alignment.topCenter,
-        child: OverflowBox(
-          alignment: Alignment.topCenter,
-          maxHeight: double.infinity,
-          child: AccountInfoCard(
-            accountNumber: accountNumber,
-            balance: balance,
-            isBalanceVisible: isBalanceVisible,
-            shrinkProgress: progress,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- Widget Terpisah (Clean Architecture UI) ---
 
 class AccountInfoCard extends StatefulWidget {
   final String accountNumber;
