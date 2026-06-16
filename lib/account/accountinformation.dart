@@ -302,15 +302,22 @@ class _AccountInformationPageState extends State<AccountInformationPage>
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       itemCount: transactions.length + 1,
       itemBuilder: (context, index) {
-        // --- TAMBAHAN TEKS BULAN DINAMIS ---
+        // --- PERBAIKAN TEKS BULAN DINAMIS ---
         if (index == 0) {
           if (provider.activeMonth.isNotEmpty) {
-            // Memastikan format huruf besar di awal (misal: "JUNI" jadi "Juni")
-            String displayMonth =
-                provider.activeMonth[0].toUpperCase() +
-                provider.activeMonth.substring(1).toLowerCase();
+            // Memastikan format huruf besar di awal untuk semua kata (misal: "MEI 2023" jadi "Mei 2023")
+            String rawMonth = provider.activeMonth;
+            String displayMonth = rawMonth
+                .split(' ')
+                .map((word) {
+                  if (word.isEmpty) return '';
+                  return word[0].toUpperCase() +
+                      word.substring(1).toLowerCase();
+                })
+                .join(' ');
+
             return Padding(
-              padding: const EdgeInsets.only(bottom: 12.0, top: 4.0),
+              padding: const EdgeInsets.only(bottom: 12.0, top: 4.0, left: 4.0),
               child: Text(
                 displayMonth,
                 style: GoogleFonts.openSans(
