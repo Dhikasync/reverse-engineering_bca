@@ -83,102 +83,104 @@ class _AccountInformationPageState extends State<AccountInformationPage>
             bottom: false,
             child: NestedScrollView(
               controller: _scrollController,
-              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-                Color appBarColor =
-                    (innerBoxIsScrolled || scrollProgress == 1.0)
-                    ? const Color(0xFF004D8E)
-                    : Color.lerp(
-                        Colors.transparent,
-                        const Color(0xFF004D8E),
-                        scrollProgress,
-                      )!;
+              headerSliverBuilder:
+                  (BuildContext context, bool innerBoxIsScrolled) {
+                    Color appBarColor =
+                        (innerBoxIsScrolled || scrollProgress == 1.0)
+                        ? const Color(0xFF004D8E)
+                        : Color.lerp(
+                            Colors.transparent,
+                            const Color(0xFF004D8E),
+                            scrollProgress,
+                          )!;
 
-                return <Widget>[
-                  // App Bar
-                  SliverAppBar(
-                    backgroundColor: appBarColor,
-                    elevation: 0.0,
-                    pinned: true,
-                    centerTitle: false,
-                    leading: IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new,
-                        color: Colors.white,
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    title: Text(
-                      'Account Information',
-                      style: GoogleFonts.openSans(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-
-                  // Account Info Card
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _AccountCardDelegate(
-                      accountNumber: widget.accountNumber,
-                      balance: widget.balance,
-                      isBalanceVisible: widget.isBalanceVisible,
-                      innerBoxIsScrolled: innerBoxIsScrolled,
-                    ),
-                  ),
-
-                  // Tab Bar
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _StickyTabBarDelegate(
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          border: Border(
-                            bottom: BorderSide(
-                              color: Color(0xFFEEEEEE),
-                              width: 1,
-                            ),
+                    return <Widget>[
+                      // App Bar
+                      SliverAppBar(
+                        backgroundColor: appBarColor,
+                        elevation: 0.0,
+                        pinned: true,
+                        centerTitle: false,
+                        leading: IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.white,
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        title: Text(
+                          'Account Information',
+                          style: GoogleFonts.openSans(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        child: TabBar(
-                          controller: _tabController,
-                          // PERBAIKAN: Menambahkan padding pada keseluruhan TabBar
-                          // agar menjorok ke dalam (ke kanan untuk sisi kiri)
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          labelPadding: const EdgeInsets.symmetric(
-                            horizontal: 2.0,
-                          ),
-                          labelColor: const Color(0xFF00529C),
-                          unselectedLabelColor: Colors.grey.shade500,
-                          indicatorColor: const Color(0xFF00529C),
-                          indicatorWeight: 3,
-                          labelStyle: GoogleFonts.openSans(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                          unselectedLabelStyle: GoogleFonts.openSans(
-                            fontWeight: FontWeight.normal,
-                            fontSize: 12,
-                          ),
-                          tabs: const [
-                            Tab(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text('Account Transactions'),
+                      ),
+
+                      // Account Info Card
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _AccountCardDelegate(
+                          accountNumber: widget.accountNumber,
+                          balance: widget.balance,
+                          isBalanceVisible: widget.isBalanceVisible,
+                          innerBoxIsScrolled: innerBoxIsScrolled,
+                        ),
+                      ),
+
+                      // Tab Bar
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _StickyTabBarDelegate(
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Color(0xFFEEEEEE),
+                                  width: 1,
+                                ),
                               ),
                             ),
-                            Tab(text: 'Card'),
-                            Tab(text: 'Pocket'),
-                          ],
+                            child: TabBar(
+                              controller: _tabController,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12.0,
+                              ),
+                              indicatorSize: TabBarIndicatorSize.tab,
+                              labelPadding: const EdgeInsets.symmetric(
+                                horizontal: 2.0,
+                              ),
+                              labelColor: const Color(0xFF00529C),
+                              unselectedLabelColor: Colors.grey.shade500,
+                              indicatorColor: const Color(0xFF00529C),
+                              indicatorWeight: 3,
+                              labelStyle: GoogleFonts.openSans(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                              unselectedLabelStyle: GoogleFonts.openSans(
+                                fontWeight: FontWeight.normal,
+                                fontSize: 12,
+                              ),
+                              // --- TAB DIKEMBALIKAN 100% STATIS ---
+                              tabs: const [
+                                Tab(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text('Account Transactions'),
+                                  ),
+                                ),
+                                Tab(text: 'Card'),
+                                Tab(text: 'Pocket'),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ];
-              },
+                    ];
+                  },
               body: Container(
                 color: Colors.white,
                 child: Column(
@@ -295,11 +297,36 @@ class _AccountInformationPageState extends State<AccountInformationPage>
       );
     }
 
+    // Menggunakan length + 1 untuk menempatkan Teks Bulan di posisi index 0 (Paling Atas)
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      itemCount: transactions.length,
+      itemCount: transactions.length + 1,
       itemBuilder: (context, index) {
-        final tx = transactions[index];
+        // --- TAMBAHAN TEKS BULAN DINAMIS ---
+        if (index == 0) {
+          if (provider.activeMonth.isNotEmpty) {
+            // Memastikan format huruf besar di awal (misal: "JUNI" jadi "Juni")
+            String displayMonth =
+                provider.activeMonth[0].toUpperCase() +
+                provider.activeMonth.substring(1).toLowerCase();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0, top: 4.0),
+              child: Text(
+                displayMonth,
+                style: GoogleFonts.openSans(
+                  color: const Color(0xFF003366), // Warna biru tua BCA
+                  fontWeight: FontWeight.w800, // Tebal
+                  fontSize: 16,
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        }
+        // ------------------------------------
+
+        // Index dikurangi 1 karena index 0 dipakai untuk teks bulan
+        final tx = transactions[index - 1];
         return TransactionTile(
           dateOrStatus: tx.dateOrStatus,
           title: tx.title,
@@ -511,7 +538,6 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
   @override
   Widget build(BuildContext context) {
     double cardHeight = 160.0 - (100.0 * widget.shrinkProgress);
-
     double dynamicRadius = 16.0;
 
     return SizedBox(
@@ -718,7 +744,6 @@ class TransactionTile extends StatelessWidget {
         children: [
           SizedBox(width: 60, child: _buildDateOrStatus()),
           const SizedBox(width: 12),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

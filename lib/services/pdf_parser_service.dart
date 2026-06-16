@@ -3,6 +3,10 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/transaction.dart';
 
 class PdfParserService {
+  // Menyimpan deteksi Bulan & Tahun dari PDF terakhir
+  static String detectedMonth = "";
+  static String detectedYear = "";
+
   static Future<bool> isPasswordRequired(String filePath) async {
     try {
       final bytes = await File(filePath).readAsBytes();
@@ -24,10 +28,14 @@ class PdfParserService {
       final String text = PdfTextExtractor(document).extractText(layoutText: true);
       
       String currentYear = DateTime.now().year.toString();
-      final yearRegex = RegExp(r'PERIODE\s*:\s*[A-Za-z]+\s*(\d{4})', caseSensitive: false);
-      final yearMatch = yearRegex.firstMatch(text);
-      if (yearMatch != null) {
-        currentYear = yearMatch.group(1)!;
+      
+      // Regex untuk menangkap Bulan dan Tahun
+      final periodRegex = RegExp(r'PERIODE\s*:.*?([A-Za-z]+)\s*(\d{4})', caseSensitive: false);
+      final periodMatch = periodRegex.firstMatch(text);
+      if (periodMatch != null) {
+        detectedMonth = periodMatch.group(1)!.toUpperCase(); 
+        detectedYear = periodMatch.group(2)!;              
+        currentYear = detectedYear;
       }
       
       final lines = text.split('\n');
@@ -84,7 +92,7 @@ class PdfParserService {
               title = title.replaceFirst(saldoAmount, '');
             }
             title = title.replaceAll(RegExp(r'\bDB\b'), '');
-            title = title.replaceAll(RegExp(r'\bCR\b'), ''); // CR is sometimes explicit
+            title = title.replaceAll(RegExp(r'\bCR\b'), ''); 
             
             // Bersihkan spasi ganda dan baris kosong
             title = title.replaceAll(RegExp(r' {2,}'), ' ').trim();
@@ -112,34 +120,40 @@ class PdfParserService {
           // Mulai block baru
           currentBlock = [line];
         } else if (currentBlock.isNotEmpty) {
-          // Berhenti jika ketemu footer atau halaman baru
-          if (line.startsWith('Bersambung ke halaman berikut') || 
-              line.startsWith('REKENING TAHAPAN XPRESI') ||
-              line.startsWith('MUTASI CR') ||
-              line.startsWith('SALDO AKHIR')) {
+          String upperLine = line.toUpperCase();
+          
+          // Berhenti jika ketemu footer atau halaman baru (Dibuat Dinamis / Universal)
+          if (upperLine.contains('BERSAMBUNG KE HALAMAN BERIKUT') || 
+              upperLine.contains('REKENING TAHAPAN') || // Mengcover Xpresi, Tahapan BCA, dll
+              upperLine.contains('TAPRES') ||
+              upperLine.contains('REKENING GIRO') ||
+              upperLine.startsWith('MUTASI CR') ||
+              upperLine.startsWith('SALDO AKHIR')) {
             processBlock();
             currentBlock = [];
           } else {
-            // Abaikan header halaman baru
-            if (!line.startsWith('KCP ') && 
-                !line.startsWith('NO. REKENING') &&
-                !line.startsWith('HALAMAN') &&
-                !line.startsWith('PERIODE') &&
-                !line.startsWith('MATA UANG') &&
-                !line.startsWith('TANGGAL KETERANGAN') &&
-                !line.startsWith('CATATAN:') &&
-                !line.startsWith('Apabila nasabah tidak') &&
-                !line.startsWith('Rekening ini sampai') &&
-                !line.startsWith('telah menyetujui') &&
-                !line.startsWith('Rekening ini.') &&
-                !line.startsWith('•') &&
-                !line.startsWith('BCA berhak') &&
-                !line.startsWith('Laporan Mutasi') &&
-                !line.contains('TANDES') &&
-                !line.contains('JAWA TIMUR') &&
-                !line.contains('INDONESIA')) {
-              // Jika ini bukan teks dari header halaman, tambahkan ke block
-              // Tapi untuk aman, biarkan saja masuk ke title, nanti tidak apa-apa karena kita potong saat 'REKENING TAHAPAN'
+            // Abaikan header halaman baru dengan format baku dari BCA
+            // Tanpa hardcode nama cabang/wilayah
+            if (!upperLine.startsWith('KCP ') && 
+                !upperLine.startsWith('CABANG ') &&
+                !upperLine.startsWith('NO. REKENING') &&
+                !upperLine.startsWith('NAMA') &&
+                !upperLine.startsWith('ALAMAT') &&
+                !upperLine.startsWith('HALAMAN') &&
+                !upperLine.startsWith('PERIODE') &&
+                !upperLine.startsWith('MATA UANG') &&
+                !upperLine.startsWith('TANGGAL KETERANGAN') &&
+                !upperLine.startsWith('CATATAN:') &&
+                !upperLine.startsWith('APABILA NASABAH TIDAK') &&
+                !upperLine.startsWith('REKENING INI SAMPAI') &&
+                !upperLine.startsWith('TELAH MENYETUJUI') &&
+                !upperLine.startsWith('REKENING INI.') &&
+                !upperLine.startsWith('•') &&
+                !upperLine.startsWith('BCA BERHAK') &&
+                !upperLine.startsWith('LAPORAN MUTASI') &&
+                !upperLine.contains('PT BANK CENTRAL ASIA')) {
+              
+              // Jika ini murni teks keterangan transaksi, tambahkan ke block
               currentBlock.add(line);
             }
           }
