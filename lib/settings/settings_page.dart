@@ -3,6 +3,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../services/pdf_parser_service.dart';
+// --- TAMBAHAN BARU: Import file manage_transactions_page ---
+import 'manage_transactions_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final String initialName;
@@ -55,7 +57,9 @@ class _SettingsPageState extends State<SettingsPage> {
     if (result != null && result.files.single.path != null) {
       String filePath = result.files.single.path!;
 
-      bool requiresPassword = await PdfParserService.isPasswordRequired(filePath);
+      bool requiresPassword = await PdfParserService.isPasswordRequired(
+        filePath,
+      );
       String? password;
       if (requiresPassword) {
         password = await _showPasswordDialog();
@@ -193,19 +197,22 @@ class _SettingsPageState extends State<SettingsPage> {
                     backgroundColor: const Color(0xFF005BAC),
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text('Simpan', style: TextStyle(fontSize: 16)),
+                  child: const Text(
+                    'Simpan Pengaturan Profil',
+                    style: TextStyle(fontSize: 16),
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
               const Divider(),
               const SizedBox(height: 16),
               const Text(
-                'Upload Mutasi Rekening (PDF)',
+                'Upload & Kelola Mutasi Rekening',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Pilih e-Statement BCA Anda untuk memperbarui daftar transaksi secara otomatis.',
+                'Upload PDF mutasi baru atau ubah data transaksi yang sudah masuk sistem.',
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
               const SizedBox(height: 16),
@@ -234,6 +241,32 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               const SizedBox(height: 16),
+
+              // --- TAMBAHAN BARU: Tombol Edit Transaksi ---
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ManageTransactionsPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.edit_note, color: Color(0xFF005BAC)),
+                  label: const Text(
+                    'Kelola / Edit Transaksi',
+                    style: TextStyle(color: Color(0xFF005BAC)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF005BAC)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               Consumer<TransactionProvider>(
                 builder: (context, provider, child) {
                   return Text(

@@ -20,36 +20,21 @@ class TransactionProvider with ChangeNotifier {
     String pdfMonth,
     String pdfYear,
   ) {
-    // Jika provider sudah punya data sebelumnya, tapi bulan/tahun PDF yang baru berbeda...
     if (_activeMonth.isNotEmpty &&
         (_activeMonth != pdfMonth || _activeYear != pdfYear)) {
-      // ...maka bersihkan semua transaksi lama!
       _transactions.clear();
     }
-
-    // Set bulan dan tahun aktif dengan data PDF yang baru saja masuk
     _activeMonth = pdfMonth;
     _activeYear = pdfYear;
-
-    // Tambahkan semua transaksi dari PDF ke dalam provider
     _transactions.addAll(newTransactions);
-
-    // Beritahu UI (seperti accountinformation.dart) untuk merender ulang
     notifyListeners();
   }
 
-  // -------------------------------------------------------------------------------
-  // PERBAIKAN: setTransactions sekarang otomatis menarik Bulan & Tahun dari Service
-  // -------------------------------------------------------------------------------
   void setTransactions(List<TransactionModel> newTransactions) {
     _transactions = newTransactions;
-
-    // Tarik data statis dari PdfParserService dan gabungkan.
-    // Contoh output: "MEI 2023" yang nantinya akan dirapikan UI menjadi "Mei 2023"
     if (PdfParserService.detectedMonth.isNotEmpty) {
       _activeMonth = "${PdfParserService.detectedMonth}".trim();
     }
-
     notifyListeners();
   }
 
@@ -58,16 +43,28 @@ class TransactionProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // --- FITUR BARU UNTUK EDIT / UPDATE TRANSAKSI ---
+  void updateTransaction(int index, TransactionModel updatedTransaction) {
+    if (index >= 0 && index < _transactions.length) {
+      _transactions[index] = updatedTransaction;
+      notifyListeners();
+    }
+  }
+
+  // --- FITUR BARU UNTUK HAPUS TRANSAKSI ---
+  void deleteTransaction(int index) {
+    if (index >= 0 && index < _transactions.length) {
+      _transactions.removeAt(index);
+      notifyListeners();
+    }
+  }
+
   void clearTransactions() {
     _transactions.clear();
-    _activeMonth =
-        ""; // Pastikan saat clear manual, state bulan & tahun juga keriset
+    _activeMonth = "";
     _activeYear = "";
-
-    // Bersihkan juga data statis di memori service agar benar-benar ter-reset
     PdfParserService.detectedMonth = "";
     PdfParserService.detectedYear = "";
-
     notifyListeners();
   }
 }
