@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:async'; // Untuk format waktu UTC dinamis
 import '../providers/transaction_provider.dart';
 
 class AccountInformationPage extends StatefulWidget {
@@ -51,124 +53,138 @@ class _AccountInformationPageState extends State<AccountInformationPage>
       backgroundColor: const Color(0xFFF5F7FA), // Warna dasar abu-abu terang
       body: Stack(
         children: [
-          // 1. Background Biru Bertekstur
-          _buildBlueBackground(),
-
-          SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                _buildAppBar(context),
-                
-                // 2. Account Info Card (Fixed position, no sliding)
-                Container(
-                  height: 220.0, // Matches the old expandedHeight to preserve the exact same gap
-                  padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 12.0),
-                  alignment: Alignment.topCenter,
-                  child: AccountInfoCard(
-                    accountNumber: widget.accountNumber,
-                    balance: widget.balance,
-                    isBalanceVisible: widget.isBalanceVisible,
-                    shrinkProgress: 0.0, // No shrinking
-                  ),
-                ),
-
-                // 3. White Container (Fixed position, only list inside scrolls)
-                Expanded(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        // 5. Tab Bar
-                        _buildTabBar(),
-
-                        // 6. Search & Filter Bar
-                        _buildSearchAndFilter(),
-
-                        // 7. TabBarView untuk konten tiap tab (Scrollable content)
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _buildTransactionList(),
-                              const Center(child: Text('Card Information')),
-                              const Center(child: Text('Pocket Information')),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ], // Closes children of Column
-            ), // Closes Column
-          ), // Closes SafeArea
-        ], // Closes children of Stack
-      ), // Closes Stack
-    ); // Closes Scaffold
-  } // Closes build method
-
-  // --- Komponen Internal Halaman ---
-
-  Widget _buildBlueBackground() {
-    return Image.asset(
-      'assets/images/background.png',
-      fit: BoxFit.cover,
-      width: double.infinity,
-      height: 350,
-      alignment: Alignment.topCenter,
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return SizedBox(
-      height: 56.0,
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const Text(
-            'Account Information',
-            style: TextStyle(
-              fontFamily: 'MyBcaFont',
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
+          // 1. Background Biru Bertekstur (Fixed Position)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 350,
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildTabBar() {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
-      ),
-      child: TabBar(
-        controller: _tabController,
-        labelColor: const Color(0xFF00529C),
-        unselectedLabelColor: Colors.grey.shade500,
-        indicatorColor: const Color(0xFF00529C),
-        indicatorWeight: 3,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.normal,
-          fontSize: 13,
-        ),
-        tabs: const [
-          Tab(text: 'Account Transactions'),
-          Tab(text: 'Card'),
-          Tab(text: 'Pocket'),
+          // 2. Nested Scroll View untuk efek animasi Card & Sticky Tab Bar
+          SafeArea(
+            bottom: false,
+            child: NestedScrollView(
+              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+                return <Widget>[
+                  // App Bar
+                  SliverAppBar(
+                    backgroundColor: innerBoxIsScrolled
+                        ? const Color(0xFF004D8E)
+                        : Colors.transparent,
+                    elevation: innerBoxIsScrolled ? 4.0 : 0.0,
+                    pinned: true,
+                    centerTitle: false,
+                    leading: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    title: Text(
+                      'Account Information',
+                      style: GoogleFonts.openSans(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                  // Account Info Card (Animasi Shrink: Bagian putih sembunyi, biru tetap sticky)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _AccountCardDelegate(
+                      accountNumber: widget.accountNumber,
+                      balance: widget.balance,
+                      isBalanceVisible: widget.isBalanceVisible,
+                    ),
+                  ),
+
+                  // Tab Bar (Akan menempel tepat di bawah kartu biru)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _StickyTabBarDelegate(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Color(0xFFEEEEEE),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: TabBar(
+                          controller: _tabController,
+                          isScrollable: true, // Agar tulisan melebar full
+                          tabAlignment: TabAlignment.start, // Ratakan kiri
+                          labelColor: const Color(0xFF00529C),
+                          unselectedLabelColor: Colors.grey.shade500,
+                          indicatorColor: const Color(0xFF00529C),
+                          indicatorWeight: 3,
+                          labelStyle: GoogleFonts.openSans(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                          unselectedLabelStyle: GoogleFonts.openSans(
+                            fontWeight: FontWeight.normal,
+                            fontSize: 13,
+                          ),
+                          tabs: const [
+                            Tab(text: 'Account Transactions'),
+                            Tab(text: 'Card'),
+                            Tab(text: 'Pocket'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ];
+              },
+              body: Container(
+                color: Colors.white, // Latar konten solid white
+                child: Column(
+                  children: [
+                    // Search & Filter Bar
+                    _buildSearchAndFilter(),
+
+                    // Konten TabBar (Scrollable)
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildTransactionList(),
+                          Center(
+                            child: Text(
+                              'Card Information',
+                              style: GoogleFonts.openSans(),
+                            ),
+                          ),
+                          Center(
+                            child: Text(
+                              'Pocket Information',
+                              style: GoogleFonts.openSans(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -192,7 +208,10 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                   const SizedBox(width: 12),
                   Icon(Icons.search, color: Colors.grey.shade500, size: 20),
                   const SizedBox(width: 8),
-                  Text('Search', style: TextStyle(color: Colors.grey.shade400)),
+                  Text(
+                    'Search',
+                    style: GoogleFonts.openSans(color: Colors.grey.shade400),
+                  ),
                 ],
               ),
             ),
@@ -231,30 +250,27 @@ class _AccountInformationPageState extends State<AccountInformationPage>
   }
 
   Widget _buildTransactionList() {
-    // Merender skeleton jika data masih dimuat
     if (_isLoading) {
       return ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        itemCount: 6, // Jumlah skeleton
+        itemCount: 6,
         itemBuilder: (context, index) => const SkeletonTransactionTile(),
       );
     }
 
-    // Ambil data transaksi dari Provider
     final provider = Provider.of<TransactionProvider>(context);
     final transactions = provider.transactions;
 
     if (transactions.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'Tidak ada transaksi.\nUpload e-Statement di Pengaturan.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey),
+          style: GoogleFonts.openSans(color: Colors.grey),
         ),
       );
     }
 
-    // Merender data dari PDF jika tersedia
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       itemCount: transactions.length,
@@ -272,6 +288,91 @@ class _AccountInformationPageState extends State<AccountInformationPage>
   }
 }
 
+// -----------------------------------------------------------------------------
+// DELEGATES UNTUK STICKY SCROLL
+// -----------------------------------------------------------------------------
+
+// Delegate untuk Sticky TabBar
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _StickyTabBarDelegate({required this.child});
+
+  @override
+  double get minExtent => 48.0;
+  @override
+  double get maxExtent => 48.0;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(_StickyTabBarDelegate oldDelegate) => true;
+}
+
+// Delegate untuk animasi kartu (Sembunyikan bagian putih, sisakan biru di atas)
+class _AccountCardDelegate extends SliverPersistentHeaderDelegate {
+  final String accountNumber;
+  final String balance;
+  final bool isBalanceVisible;
+
+  _AccountCardDelegate({
+    required this.accountNumber,
+    required this.balance,
+    required this.isBalanceVisible,
+  });
+
+  @override
+  double get minExtent => 72.0; // 60 (Tinggi Card Biru) + 12 (Top Padding)
+  @override
+  double get maxExtent => 192.0; // 160 (Tinggi Total Card) + 12 (Top) + 20 (Bottom Padding)
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    // 0.0 (terbuka penuh) hingga 1.0 (menyusut penuh)
+    double shrinkProgress = (shrinkOffset / (maxExtent - minExtent)).clamp(
+      0.0,
+      1.0,
+    );
+
+    // Padding bawah mengecil hingga 0 saat di-scroll agar TabBar menempel ke Header Biru
+    double bottomPadding = 20.0 * (1.0 - shrinkProgress);
+
+    return Container(
+      color: Colors.transparent,
+      padding: EdgeInsets.only(
+        left: 16.0,
+        right: 16.0,
+        top: 12.0,
+        bottom: bottomPadding,
+      ),
+      child: AccountInfoCard(
+        accountNumber: accountNumber,
+        balance: balance,
+        isBalanceVisible: isBalanceVisible,
+        shrinkProgress: shrinkProgress, // Progress dikirim ke kartu
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _AccountCardDelegate oldDelegate) => true;
+}
+
+// -----------------------------------------------------------------------------
+// ACCOUNT INFO CARD WIDGET
+// -----------------------------------------------------------------------------
+
 class AccountInfoCard extends StatefulWidget {
   final String accountNumber;
   final String balance;
@@ -283,7 +384,7 @@ class AccountInfoCard extends StatefulWidget {
     required this.accountNumber,
     required this.balance,
     required this.isBalanceVisible,
-    this.shrinkProgress = 0.0,
+    required this.shrinkProgress,
   }) : super(key: key);
 
   @override
@@ -292,11 +393,51 @@ class AccountInfoCard extends StatefulWidget {
 
 class _AccountInfoCardState extends State<AccountInfoCard> {
   late bool _isBalanceVisible;
+  late Timer _timer;
+  String _currentUtcTime = '';
 
   @override
   void initState() {
     super.initState();
     _isBalanceVisible = widget.isBalanceVisible;
+    _updateTime();
+
+    // Timer UTC dinamis
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _updateTime();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  void _updateTime() {
+    final now = DateTime.now();
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    String pad(int n) => n.toString().padLeft(2, '0');
+
+    if (mounted) {
+      setState(() {
+        _currentUtcTime =
+            '${pad(now.day)} ${months[now.month - 1]} ${now.year} ${pad(now.hour)}:${pad(now.minute)}:${pad(now.second)} UTC+7';
+      });
+    }
   }
 
   String _formatBalance(String value) {
@@ -332,43 +473,141 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header Kartu
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 12.0,
+    // Tinggi kartu mengecil dari 160 ke 60 sesuai scroll
+    double cardHeight = 160.0 - (100.0 * widget.shrinkProgress);
+
+    return SizedBox(
+      height: cardHeight,
+      child: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6A8EAE), // Adjust to grey-blue in image
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(16 * widget.shrinkProgress),
-                bottomRight: Radius.circular(16 * widget.shrinkProgress),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // 1. Bagian Putih (Active Balance) - Akan slide ke atas & memudar saat diskrol
+              Positioned(
+                top: 60 - (60 * widget.shrinkProgress),
+                left: 0,
+                right: 0,
+                height: 100,
+                child: Opacity(
+                  opacity: (1.0 - (widget.shrinkProgress * 1.5)).clamp(
+                    0.0,
+                    1.0,
+                  ),
+                  child: Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: 12.0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Active Balance',
+                          style: GoogleFonts.openSans(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'IDR ',
+                                  style: GoogleFonts.openSans(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    color: const Color(0xFF333333),
+                                  ),
+                                ),
+                                Text(
+                                  _isBalanceVisible
+                                      ? _formatBalance(widget.balance)
+                                      : '••••••••',
+                                  style: GoogleFonts.openSans(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: _isBalanceVisible ? 0 : 2.0,
+                                    color: const Color(0xFF333333),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isBalanceVisible = !_isBalanceVisible;
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Icon(
+                                  _isBalanceVisible
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: const Color(0xFF005BAC),
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'TAHAPAN - IDR',
+                          style: GoogleFonts.openSans(
+                            color: Colors.grey.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          _currentUtcTime,
+                          style: GoogleFonts.openSans(
+                            color: Colors.grey.shade500,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
+
+              // 2. Bagian Biru (Account No.) - Tetap di atas
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 60,
+                child: Container(
+                  color: const Color(0xFF6A8EAE),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 12.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         'Account No.',
-                        style: TextStyle(
+                        style: GoogleFonts.openSans(
                           color: Colors.white.withOpacity(0.9),
                           fontSize: 12,
                         ),
@@ -378,7 +617,7 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                         children: [
                           Text(
                             _formatAccountNumber(widget.accountNumber),
-                            style: const TextStyle(
+                            style: GoogleFonts.openSans(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -391,97 +630,18 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-
-          // Body Kartu
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 12.0,
-            ),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
               ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Active Balance',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'IDR ',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        Text(
-                          _isBalanceVisible
-                              ? _formatBalance(widget.balance)
-                              : '••••••••',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: _isBalanceVisible ? 0 : 2.0,
-                            color: const Color(0xFF333333),
-                          ),
-                        ),
-                      ],
-                    ),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Icon(
-                        _isBalanceVisible
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: const Color(0xFF005BAC),
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isBalanceVisible = !_isBalanceVisible;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'TAHAPAN - IDR',
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  '06 Jun 2026 22:39:11 UTC+7',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
-                ),
-              ],
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
+
+// -----------------------------------------------------------------------------
+// LIST TRANSAKSI WIDGET
+// -----------------------------------------------------------------------------
 
 class TransactionTile extends StatelessWidget {
   final String dateOrStatus;
@@ -511,12 +671,9 @@ class TransactionTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Kolom Kiri: Tanggal / Status PEND
-          SizedBox(
-            width: 44, // Slightly wider to fit the year
-            child: _buildDateOrStatus(),
-          ),
-          const SizedBox(width: 16),
+          // Kolom Kiri: Tanggal (Abu-abu standar) atau PEND (Oranye)
+          SizedBox(width: 50, child: _buildDateOrStatus()),
+          const SizedBox(width: 12),
 
           // Kolom Kanan: Detail Transaksi
           Expanded(
@@ -525,8 +682,8 @@ class TransactionTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xFF003366), // Warna biru gelap teks myBCA
+                  style: GoogleFonts.openSans(
+                    color: const Color(0xFF003366),
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -534,8 +691,8 @@ class TransactionTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFF003366),
+                  style: GoogleFonts.openSans(
+                    color: const Color(0xFF003366),
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -543,10 +700,10 @@ class TransactionTile extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   amount,
-                  style: TextStyle(
+                  style: GoogleFonts.openSans(
                     color: isDebit
                         ? const Color(0xFFD32F2F)
-                        : Colors.green, // Merah untuk pengeluaran
+                        : const Color(0xFF008A00),
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -561,50 +718,64 @@ class TransactionTile extends StatelessWidget {
 
   Widget _buildDateOrStatus() {
     List<String> parts = dateOrStatus.split('\n');
-    if (parts.length == 3) {
+
+    // Format Tanggal (cth: 06 \n JUN \n 2026) -> Warna abu-abu elegan seperti di BCA statement
+    if (parts.length >= 3) {
       return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             parts[0],
-            style: const TextStyle(
-              color: Color(0xFF003366),
+            style: GoogleFonts.openSans(
+              color: Colors.grey.shade700,
               fontWeight: FontWeight.w800,
-              fontSize: 18,
+              fontSize: 16,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             parts[1].toUpperCase(),
-            style: const TextStyle(
-              color: Color(0xFF003366),
+            style: GoogleFonts.openSans(
+              color: Colors.grey.shade600,
               fontWeight: FontWeight.bold,
-              fontSize: 13,
+              fontSize: 12,
             ),
           ),
           const SizedBox(height: 1),
           Text(
             parts[2],
-            style: const TextStyle(
-              color: Color(0xFF003366),
+            style: GoogleFonts.openSans(
+              color: Colors.grey.shade500,
               fontWeight: FontWeight.bold,
-              fontSize: 11,
+              fontSize: 10,
             ),
           ),
         ],
       );
     } else {
-      return Text(
-        dateOrStatus,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Colors.grey.shade500,
-          fontWeight: FontWeight.bold,
-          fontSize: dateOrStatus == 'PEND' ? 12 : 14,
+      // Kondisi untuk Status (contoh: PEND)
+      bool isPending = dateOrStatus.toUpperCase() == 'PEND';
+
+      return Padding(
+        padding: const EdgeInsets.only(top: 4.0),
+        child: Text(
+          dateOrStatus,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.openSans(
+            color: isPending ? Colors.orange.shade700 : Colors.grey.shade800,
+            fontWeight: FontWeight.bold,
+            fontStyle: isPending ? FontStyle.italic : FontStyle.normal,
+            fontSize: 13,
+          ),
         ),
       );
     }
   }
 }
+
+// -----------------------------------------------------------------------------
+// SKELETON LOADING WIDGET
+// -----------------------------------------------------------------------------
 
 class SkeletonTransactionTile extends StatefulWidget {
   const SkeletonTransactionTile({Key? key}) : super(key: key);
@@ -622,12 +793,10 @@ class _SkeletonTransactionTileState extends State<SkeletonTransactionTile>
   @override
   void initState() {
     super.initState();
-    // Animasi denyut (pulse) untuk skeleton
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-
     _animation = Tween<double>(
       begin: 0.3,
       end: 0.8,
@@ -654,7 +823,6 @@ class _SkeletonTransactionTileState extends State<SkeletonTransactionTile>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Skeleton untuk Kolom Tanggal/Status
             Container(
               width: 40,
               height: 16,
@@ -664,13 +832,10 @@ class _SkeletonTransactionTileState extends State<SkeletonTransactionTile>
               ),
             ),
             const SizedBox(width: 16),
-
-            // Skeleton untuk Detail Transaksi
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Skeleton Title (Baris 1)
                   Container(
                     width: double.infinity,
                     height: 14,
@@ -680,7 +845,6 @@ class _SkeletonTransactionTileState extends State<SkeletonTransactionTile>
                     ),
                   ),
                   const SizedBox(height: 6),
-                  // Skeleton Subtitle (Baris 2)
                   Container(
                     width: 150,
                     height: 12,
@@ -690,7 +854,6 @@ class _SkeletonTransactionTileState extends State<SkeletonTransactionTile>
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // Skeleton Amount (Baris 3)
                   Container(
                     width: 100,
                     height: 14,
