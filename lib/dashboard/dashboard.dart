@@ -5,7 +5,7 @@ import 'package:reverse_engineering_bca/account/accountinformation.dart';
 import 'package:reverse_engineering_bca/settings/settings_page.dart';
 
 class MyBcaHomeScreen extends StatefulWidget {
-  const MyBcaHomeScreen({Key? key}) : super(key: key);
+  const MyBcaHomeScreen({super.key});
 
   @override
   State<MyBcaHomeScreen> createState() => _MyBcaHomeScreenState();
@@ -193,7 +193,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
           borderRadius: BorderRadius.circular(16 * scale),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10 * scale,
               offset: Offset(0, 5 * scale),
             ),
@@ -331,6 +331,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                         accountNumber: accountNumber,
                         balance: balance,
                         isBalanceVisible: isBalanceVisible,
+                        userName: userName,
                       ),
                     ),
                   );
@@ -484,10 +485,10 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
   }
 
   Widget _buildMenuGrid() {
-    Widget _buildTransferIcon() =>
+    Widget buildTransferIcon() =>
         Icon(Icons.send, color: const Color(0xFF004D8E), size: 32 * scale);
 
-    Widget _buildBayarIsiUlangIcon() {
+    Widget buildBayarIsiUlangIcon() {
       return Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
@@ -516,7 +517,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       );
     }
 
-    Widget _buildInvestasiIcon() {
+    Widget buildInvestasiIcon() {
       return Container(
         width: 28 * scale,
         height: 28 * scale,
@@ -528,7 +529,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       );
     }
 
-    Widget _buildLifestyleIcon() {
+    Widget buildLifestyleIcon() {
       return Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
@@ -551,13 +552,13 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       );
     }
 
-    Widget _buildEStatementIcon() => Icon(
+    Widget buildEStatementIcon() => Icon(
       Icons.description,
       color: const Color(0xFF004D8E),
       size: 32 * scale,
     );
 
-    Widget _buildFlazzIcon() {
+    Widget buildFlazzIcon() {
       return Container(
         width: 32 * scale,
         height: 22 * scale,
@@ -591,7 +592,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       );
     }
 
-    Widget _buildCardlessIcon() {
+    Widget buildCardlessIcon() {
       return Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
@@ -627,7 +628,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       );
     }
 
-    Widget _buildProdukPerbankanIcon() {
+    Widget buildProdukPerbankanIcon() {
       return Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
@@ -660,13 +661,13 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       );
     }
 
-    Widget _buildProteksiIcon() => Icon(
+    Widget buildProteksiIcon() => Icon(
       Icons.health_and_safety,
       color: const Color(0xFF004D8E),
       size: 32 * scale,
     );
 
-    Widget _buildSemuaFiturIcon() {
+    Widget buildSemuaFiturIcon() {
       return SizedBox(
         width: 26 * scale,
         height: 26 * scale,
@@ -712,37 +713,37 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
     }
 
     final List<Map<String, dynamic>> menuItems = [
-      {'customIcon': _buildTransferIcon(), 'label': 'Transfer', 'isNew': false},
+      {'customIcon': buildTransferIcon(), 'label': 'Transfer', 'isNew': false},
       {
-        'customIcon': _buildBayarIsiUlangIcon(),
+        'customIcon': buildBayarIsiUlangIcon(),
         'label': 'Bayar & Isi\nUlang',
         'isNew': true,
       },
       {
-        'customIcon': _buildInvestasiIcon(),
+        'customIcon': buildInvestasiIcon(),
         'label': 'Investasi',
         'isNew': false,
       },
       {
-        'customIcon': _buildLifestyleIcon(),
+        'customIcon': buildLifestyleIcon(),
         'label': 'Lifestyle',
         'isNew': true,
       },
       {
-        'customIcon': _buildEStatementIcon(),
+        'customIcon': buildEStatementIcon(),
         'label': 'e-Statement',
         'isNew': false,
       },
-      {'customIcon': _buildFlazzIcon(), 'label': 'Flazz', 'isNew': false},
-      {'customIcon': _buildCardlessIcon(), 'label': 'Cardless', 'isNew': false},
+      {'customIcon': buildFlazzIcon(), 'label': 'Flazz', 'isNew': false},
+      {'customIcon': buildCardlessIcon(), 'label': 'Cardless', 'isNew': false},
       {
-        'customIcon': _buildProdukPerbankanIcon(),
+        'customIcon': buildProdukPerbankanIcon(),
         'label': 'Produk\nPerbankan',
         'isNew': false,
       },
-      {'customIcon': _buildProteksiIcon(), 'label': 'Proteksi', 'isNew': false},
+      {'customIcon': buildProteksiIcon(), 'label': 'Proteksi', 'isNew': false},
       {
-        'customIcon': _buildSemuaFiturIcon(),
+        'customIcon': buildSemuaFiturIcon(),
         'label': 'Semua Fitur',
         'isNew': false,
       },
@@ -913,7 +914,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10 * scale,
               offset: Offset(0, 4 * scale),
             ),
@@ -1007,6 +1008,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                         accountNumber: accountNumber,
                         balance: balance,
                         isBalanceVisible: isBalanceVisible,
+                        userName: userName,
                       ),
                     ),
                   );
@@ -1093,7 +1095,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
 // ---------------------------------------------------------------------------
 
 class BcaPromoCarousel extends StatefulWidget {
-  const BcaPromoCarousel({Key? key}) : super(key: key);
+  const BcaPromoCarousel({super.key});
 
   @override
   State<BcaPromoCarousel> createState() => _BcaPromoCarouselState();
@@ -1170,7 +1172,7 @@ class _BcaPromoCarouselState extends State<BcaPromoCarousel> {
                   borderRadius: BorderRadius.circular(16 * scale),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 5 * scale,
                       offset: Offset(0, 3 * scale),
                     ),

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/transaction.dart';
 
@@ -6,6 +7,7 @@ class PdfParserService {
   // Menyimpan deteksi Bulan & Tahun dari PDF terakhir
   static String detectedMonth = "";
   static String detectedYear = "";
+  static double detectedStartingBalance = 734147.95;
 
   static Future<bool> isPasswordRequired(String filePath) async {
     try {
@@ -50,7 +52,14 @@ class PdfParserService {
         String fullText = currentBlock.join('\n');
         
         // Abaikan jika ini saldo awal
-        if (fullText.contains('SALDO AWAL')) return;
+        if (fullText.contains('SALDO AWAL')) {
+          final match = amountRegex.firstMatch(fullText);
+          if (match != null) {
+            final valStr = match.group(0)!.replaceAll(',', '');
+            detectedStartingBalance = double.tryParse(valStr) ?? 734147.95;
+          }
+          return;
+        }
         
         final dateMatch = dateRegex.firstMatch(currentBlock.first);
         if (dateMatch == null) return;
@@ -164,7 +173,7 @@ class PdfParserService {
       
       document.dispose();
     } catch (e) {
-      print('Error parsing PDF: $e');
+      debugPrint('Error parsing PDF: $e');
       throw Exception('Gagal membaca PDF. Pastikan file valid atau password benar.');
     }
 

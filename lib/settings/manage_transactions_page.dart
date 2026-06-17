@@ -4,7 +4,7 @@ import '../providers/transaction_provider.dart';
 import '../models/transaction.dart';
 
 class ManageTransactionsPage extends StatefulWidget {
-  const ManageTransactionsPage({Key? key}) : super(key: key);
+  const ManageTransactionsPage({super.key});
 
   @override
   State<ManageTransactionsPage> createState() => _ManageTransactionsPageState();

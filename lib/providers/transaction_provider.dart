@@ -11,10 +11,12 @@ class TransactionProvider with ChangeNotifier {
 
   // Menyimpan daftar bulan dari PDF yang pernah di-upload
   final List<String> _uploadedMonths = [];
+  double _startingBalance = 734147.95;
 
   List<TransactionModel> get transactions => _transactions;
   String get activeMonth => _activeMonth;
   String get activeYear => _activeYear;
+  double get startingBalance => _startingBalance;
 
   // Getter untuk daftar bulan. Jika belum ada PDF yang di-upload,
   // kita tampilkan dummy 3 bulan sebagai default (pajangan).
@@ -39,6 +41,7 @@ class TransactionProvider with ChangeNotifier {
     _activeMonth = pdfMonth;
     _activeYear = pdfYear;
     _transactions.addAll(newTransactions);
+    _startingBalance = PdfParserService.detectedStartingBalance;
 
     // Tambahkan bulan ke daftar riwayat jika belum ada
     String formattedMonth = "$pdfMonth $pdfYear".trim();
@@ -54,8 +57,9 @@ class TransactionProvider with ChangeNotifier {
 
   void setTransactions(List<TransactionModel> newTransactions) {
     _transactions = newTransactions;
+    _startingBalance = PdfParserService.detectedStartingBalance;
     if (PdfParserService.detectedMonth.isNotEmpty) {
-      _activeMonth = "${PdfParserService.detectedMonth}".trim();
+      _activeMonth = PdfParserService.detectedMonth.trim();
 
       String formattedMonth = "$_activeMonth ${PdfParserService.detectedYear}"
           .trim();

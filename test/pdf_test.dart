@@ -1,0 +1,19 @@
+import 'dart:io';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+
+void main() {
+  test('Extract PDF text bounds', () async {
+    final bytes = File('assets/pdf/1870587259Oct2025 (1).pdf').readAsBytesSync();
+    final document = PdfDocument(inputBytes: bytes);
+    final PdfTextExtractor extractor = PdfTextExtractor(document);
+
+    for (int pageIndex = 0; pageIndex < document.pages.count; pageIndex++) {
+      print('--- PAGE ${pageIndex + 1} ---');
+      final List<TextLine> lines = extractor.extractTextLines(startPageIndex: pageIndex, endPageIndex: pageIndex);
+      for (var i = 0; i < lines.length; i++) {
+        print('${lines[i].text} -> ${lines[i].bounds}');
+      }
+    }
+  });
+}

@@ -12,11 +12,11 @@ class SettingsPage extends StatefulWidget {
   final String initialBalance;
 
   const SettingsPage({
-    Key? key,
+    super.key,
     required this.initialName,
     required this.initialAccountNumber,
     required this.initialBalance,
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();

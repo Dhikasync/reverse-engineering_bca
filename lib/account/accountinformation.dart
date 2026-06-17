@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 import '../providers/transaction_provider.dart';
 
@@ -11,13 +11,15 @@ class AccountInformationPage extends StatefulWidget {
   final String accountNumber;
   final String balance;
   final bool isBalanceVisible;
+  final String userName;
 
   const AccountInformationPage({
-    Key? key,
+    super.key,
     required this.accountNumber,
     required this.balance,
     required this.isBalanceVisible,
-  }) : super(key: key);
+    required this.userName,
+  });
 
   @override
   State<AccountInformationPage> createState() => _AccountInformationPageState();
@@ -252,7 +254,11 @@ class _AccountInformationPageState extends State<AccountInformationPage>
               // Buka halaman e-Statement secara penuh (Full Page)
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const EStatementPage()),
+                MaterialPageRoute(builder: (context) => EStatementPage(
+                  userName: widget.userName,
+                  accountNumber: widget.accountNumber,
+                  balance: widget.balance,
+                )),
               );
             },
             child: Container(
@@ -463,12 +469,12 @@ class AccountInfoCard extends StatefulWidget {
   final double shrinkProgress;
 
   const AccountInfoCard({
-    Key? key,
+    super.key,
     required this.accountNumber,
     required this.balance,
     required this.isBalanceVisible,
     required this.shrinkProgress,
-  }) : super(key: key);
+  });
 
   @override
   State<AccountInfoCard> createState() => _AccountInfoCardState();
@@ -565,8 +571,8 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
           borderRadius: BorderRadius.circular(dynamicRadius),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(
-                0.08 * (1.0 - widget.shrinkProgress),
+              color: Colors.black.withValues(
+                alpha: 0.08 * (1.0 - widget.shrinkProgress),
               ),
               blurRadius: 10,
               offset: const Offset(0, 5),
@@ -691,7 +697,7 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                       Text(
                         'Account No.',
                         style: GoogleFonts.openSans(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 12,
                         ),
                       ),
@@ -737,13 +743,13 @@ class TransactionTile extends StatelessWidget {
   final bool isDebit;
 
   const TransactionTile({
-    Key? key,
+    super.key,
     required this.dateOrStatus,
     required this.title,
     required this.subtitle,
     required this.amount,
     this.isDebit = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -810,7 +816,7 @@ class TransactionTile extends StatelessWidget {
           Text(
             parts[0],
             style: GoogleFonts.openSans(
-              color: const Color(0xFF333333).withOpacity(0.5),
+              color: const Color(0xFF333333).withValues(alpha: 0.5),
               fontWeight: FontWeight.w500,
               fontSize: 26,
               height: 1.1,
@@ -820,7 +826,7 @@ class TransactionTile extends StatelessWidget {
           Text(
             parts[1].toUpperCase(),
             style: GoogleFonts.openSans(
-              color: Colors.grey.shade500.withOpacity(0.5),
+              color: Colors.grey.shade500.withValues(alpha: 0.5),
               fontWeight: FontWeight.bold,
               fontSize: 10,
               height: 1.0,
@@ -829,7 +835,7 @@ class TransactionTile extends StatelessWidget {
           Text(
             parts[2],
             style: GoogleFonts.openSans(
-              color: Colors.grey.shade500.withOpacity(0.5),
+              color: Colors.grey.shade500.withValues(alpha: 0.5),
               fontWeight: FontWeight.bold,
               fontSize: 10,
               height: 1.0,
@@ -861,7 +867,7 @@ class TransactionTile extends StatelessWidget {
 // -----------------------------------------------------------------------------
 
 class SkeletonTransactionTile extends StatefulWidget {
-  const SkeletonTransactionTile({Key? key}) : super(key: key);
+  const SkeletonTransactionTile({super.key});
 
   @override
   State<SkeletonTransactionTile> createState() =>

@@ -55,4 +55,5 @@ parse_test.dart
 parse_test2.dart
 pdf_text_output.txt
 pdf_text_layout.txt
+test_pdf_bounds.dart
 assets/pdf
