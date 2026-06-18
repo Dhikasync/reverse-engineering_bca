@@ -917,29 +917,48 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
             vertical: 16.0 * scale,
           ),
           child: Row(
-            mainAxisAlignment:
-                MainAxisAlignment.center, // Ditengahkan karena berdiri sendiri
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: EdgeInsets.all(8 * scale),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE5F6FA),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.contactless_outlined,
-                  color: bcaBlue,
-                  size: 20 * scale,
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8 * scale),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE5F6FA),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.contactless_outlined,
+                      color: bcaBlue,
+                      size: 20 * scale,
+                    ),
+                  ),
+                  SizedBox(width: 8 * scale),
+                  Text(
+                    'NFC Pay',
+                    style: GoogleFonts.openSans(
+                      color: const Color(0xFF003D79),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14 * scale,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: 8 * scale),
-              Text(
-                'NFC Pay',
-                style: GoogleFonts.openSans(
-                  color: const Color(0xFF003D79),
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14 * scale,
-                ),
+              Row(
+                children: [
+                  Image.asset(
+                    'assets/images/qris.png', // Logo QRIS dikembalikan menggunakan file barumu
+                    height:
+                        60 *
+                        scale, // Tinggi di-set 20 agar seimbang proporsinya dengan ikon NFC Pay
+                  ),
+                  SizedBox(width: 8 * scale),
+                  Icon(
+                    Icons.chevron_right,
+                    color: const Color(0xFF003D79),
+                    size: 24 * scale,
+                  ),
+                ],
               ),
             ],
           ),
