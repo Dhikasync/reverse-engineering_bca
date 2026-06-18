@@ -740,7 +740,7 @@ class _EStatementPageState extends State<EStatementPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Gagal mengekspor PDF: $e')));
+        ).showSnackBar(SnackBar(content: Text('Failed to export PDF: $e')));
       }
     }
   }

@@ -29,6 +29,7 @@ class _AccountInformationPageState extends State<AccountInformationPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
+  late ScrollController _transactionScrollController;
   double _scrollOffset = 0.0;
   bool _isLoading = true;
 
@@ -46,6 +47,8 @@ class _AccountInformationPageState extends State<AccountInformationPage>
       }
     });
 
+    _transactionScrollController = ScrollController();
+
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
@@ -59,6 +62,7 @@ class _AccountInformationPageState extends State<AccountInformationPage>
   void dispose() {
     _tabController.dispose();
     _scrollController.dispose();
+    _transactionScrollController.dispose();
     super.dispose();
   }
 
@@ -183,31 +187,32 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                           ),
                         ),
                       ),
+
+                      // Search, Export & Filter Bar (Pinned to stay sticky below TabBar)
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: _SearchFilterDelegate(
+                          child: _buildSearchAndFilter(),
+                        ),
+                      ),
                     ];
                   },
               body: Container(
                 color: Colors.white,
-                child: Column(
+                child: TabBarView(
+                  controller: _tabController,
                   children: [
-                    _buildSearchAndFilter(),
-                    Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildTransactionList(),
-                          Center(
-                            child: Text(
-                              'Card Information',
-                              style: GoogleFonts.openSans(),
-                            ),
-                          ),
-                          Center(
-                            child: Text(
-                              'Pocket Information',
-                              style: GoogleFonts.openSans(),
-                            ),
-                          ),
-                        ],
+                    _buildTransactionList(),
+                    Center(
+                      child: Text(
+                        'Card Information',
+                        style: GoogleFonts.openSans(),
+                      ),
+                    ),
+                    Center(
+                      child: Text(
+                        'Pocket Information',
+                        style: GoogleFonts.openSans(),
                       ),
                     ),
                   ],
@@ -221,50 +226,78 @@ class _AccountInformationPageState extends State<AccountInformationPage>
   }
 
   Widget _buildSearchAndFilter() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 12),
-                  Icon(Icons.search, color: Colors.grey.shade500, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Search',
-                    style: GoogleFonts.openSans(color: Colors.grey.shade400),
-                  ),
-                ],
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 12),
+                    Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Search',
+                      style: GoogleFonts.openSans(color: Colors.grey.shade400),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
+            const SizedBox(width: 12),
 
-          // --- PERUBAHAN NAVIGASI HALAMAN E-STATEMENT DI SINI ---
-          GestureDetector(
-            onTap: () {
-              // Buka halaman e-Statement secara penuh (Full Page)
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EStatementPage(
-                    userName: widget.userName,
-                    accountNumber: widget.accountNumber,
-                    balance: widget.balance,
-                    accountTypeDetail: '',
+            // --- PERUBAHAN NAVIGASI HALAMAN E-STATEMENT DI SINI ---
+            GestureDetector(
+              onTap: () {
+                // Buka halaman e-Statement secara penuh (Full Page)
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EStatementPage(
+                      userName: widget.userName,
+                      accountNumber: widget.accountNumber,
+                      balance: widget.balance,
+                      accountTypeDetail: '',
+                    ),
                   ),
+                );
+              },
+              child: Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              );
-            },
-            child: Container(
+                child: Icon(
+                  Icons.receipt_long,
+                  color: Colors.grey.shade700,
+                  size: 20,
+                ),
+              ),
+            ),
+
+            // --------------------------------------------------------
+            const SizedBox(width: 8),
+            Container(
               height: 40,
               width: 40,
               decoration: BoxDecoration(
@@ -272,29 +305,13 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                Icons.receipt_long,
+                Icons.filter_alt_outlined,
                 color: Colors.grey.shade700,
                 size: 20,
               ),
             ),
-          ),
-
-          // --------------------------------------------------------
-          const SizedBox(width: 8),
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.filter_alt_outlined,
-              color: Colors.grey.shade700,
-              size: 20,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -314,46 +331,52 @@ class _AccountInformationPageState extends State<AccountInformationPage>
     if (transactions.isEmpty) {
       return Center(
         child: Text(
-          'Tidak ada transaksi.\nUpload e-Statement di Pengaturan.',
+          'No transactions.\nUpload e-Statement in Settings.',
           textAlign: TextAlign.center,
           style: GoogleFonts.openSans(color: Colors.grey),
         ),
       );
     }
 
-    // Fungsi Helper untuk menerjemahkan singkatan bulan ke Bahasa Indonesia
-    String mapMonthToIndonesian(String monthShort) {
+    // Helper function to translate month abbreviation to English
+    String mapMonthToEnglish(String monthShort) {
       switch (monthShort.toLowerCase()) {
         case 'jan':
-          return 'Januari';
+          return 'January';
         case 'feb':
-          return 'Februari';
+          return 'February';
         case 'mar':
-          return 'Maret';
+          return 'March';
         case 'apr':
           return 'April';
         case 'may':
-          return 'Mei';
+        case 'mei':
+          return 'May';
         case 'jun':
-          return 'Juni';
+          return 'June';
         case 'jul':
-          return 'Juli';
+          return 'July';
         case 'aug':
-          return 'Agustus';
+        case 'agu':
+          return 'August';
         case 'sep':
           return 'September';
         case 'oct':
-          return 'Oktober';
+        case 'okt':
+          return 'October';
         case 'nov':
           return 'November';
         case 'dec':
-          return 'Desember';
+        case 'des':
+          return 'December';
         default:
           return monthShort;
       }
     }
 
     return ListView.builder(
+      controller: _transactionScrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       itemCount: transactions
           .length, // Ubah menjadi length karena tidak perlu dummy item index 0 lagi
@@ -367,8 +390,8 @@ class _AccountInformationPageState extends State<AccountInformationPage>
         if (parts.length >= 3) {
           String monthShort = parts[1];
           // String year = parts[2];
-          String indoMonth = mapMonthToIndonesian(monthShort);
-          displayMonth = "$indoMonth";
+          String engMonth = mapMonthToEnglish(monthShort);
+          displayMonth = "$engMonth";
 
           if (index == 0) {
             showHeader = true; // Selalu tampilkan header di awal list
@@ -379,8 +402,8 @@ class _AccountInformationPageState extends State<AccountInformationPage>
             if (prevParts.length >= 3) {
               String prevMonthShort = prevParts[1];
               // String prevYear = prevParts[2];
-              String prevIndoMonth = mapMonthToIndonesian(prevMonthShort);
-              String prevDisplayMonth = "$prevIndoMonth";
+              String prevEngMonth = mapMonthToEnglish(prevMonthShort);
+              String prevDisplayMonth = "$prevEngMonth";
 
               // Jika bulannya berbeda, trigger header
               if (displayMonth != prevDisplayMonth) {
@@ -451,6 +474,29 @@ class _AccountInformationPageState extends State<AccountInformationPage>
 // -----------------------------------------------------------------------------
 // DELEGATES UNTUK STICKY SCROLL
 // -----------------------------------------------------------------------------
+
+class _SearchFilterDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  _SearchFilterDelegate({required this.child});
+  @override
+  double get minExtent => 72.0;
+  @override
+  double get maxExtent => 72.0;
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Colors.white,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SearchFilterDelegate oldDelegate) => false;
+}
 
 class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
   final Widget child;

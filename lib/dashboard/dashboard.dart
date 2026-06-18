@@ -203,7 +203,10 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
               padding: EdgeInsets.all(16.0 * scale),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF17C3CE), Color(0xFF0C97B2)],
+                  colors: [
+                    Color.fromARGB(255, 95, 180, 206),
+                    Color(0xFF0C97B2),
+                  ],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
@@ -404,7 +407,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
           Row(
             children: [
               Text(
-                'Menangkan di Sini',
+                'Win Here',
                 style: GoogleFonts.openSans(
                   color: Colors.white,
                   fontSize: 14 * scale,
@@ -460,7 +463,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                     Icon(Icons.tune, color: bcaLightBlue, size: 16 * scale),
                     SizedBox(width: 4 * scale),
                     Text(
-                      'Atur',
+                      'Manage',
                       style: GoogleFonts.openSans(
                         color: bcaLightBlue,
                         fontWeight: FontWeight.w700,
@@ -711,12 +714,12 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       {'customIcon': buildTransferIcon(), 'label': 'Transfer', 'isNew': false},
       {
         'customIcon': buildBayarIsiUlangIcon(),
-        'label': 'Bayar & Isi\nUlang',
+        'label': 'Pay & Reload',
         'isNew': true,
       },
       {
         'customIcon': buildInvestasiIcon(),
-        'label': 'Investasi',
+        'label': 'Investment',
         'isNew': false,
       },
       {'customIcon': buildLifestyleIcon(), 'label': 'Lifestyle', 'isNew': true},
@@ -729,13 +732,17 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       {'customIcon': buildCardlessIcon(), 'label': 'Cardless', 'isNew': false},
       {
         'customIcon': buildProdukPerbankanIcon(),
-        'label': 'Produk\nPerbankan',
+        'label': 'Banking\nProducts',
         'isNew': false,
       },
-      {'customIcon': buildProteksiIcon(), 'label': 'Proteksi', 'isNew': false},
+      {
+        'customIcon': buildProteksiIcon(),
+        'label': 'Protection',
+        'isNew': false,
+      },
       {
         'customIcon': buildSemuaFiturIcon(),
-        'label': 'Semua Fitur',
+        'label': 'All Features',
         'isNew': false,
       },
     ];
@@ -747,7 +754,8 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Stack(
-              alignment: Alignment.topRight,
+              alignment: Alignment.bottomCenter,
+              clipBehavior: Clip.none,
               children: [
                 Container(
                   width: 60 * scale,
@@ -757,24 +765,32 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                     color: Color(0xFFE5F6FA),
                     shape: BoxShape.circle,
                   ),
-                  child: item['customIcon'],
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: item['isNew'] ? 6.0 * scale : 0.0,
+                    ),
+                    child: item['customIcon'],
+                  ),
                 ),
                 if (item['isNew'])
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 4 * scale,
-                      vertical: 2 * scale,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(8 * scale),
-                    ),
-                    child: Text(
-                      'NEW',
-                      style: GoogleFonts.openSans(
-                        color: Colors.white,
-                        fontSize: 8 * scale,
-                        fontWeight: FontWeight.bold,
+                  Positioned(
+                    bottom: -2 * scale,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 5 * scale,
+                        vertical: 1.5 * scale,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(6 * scale),
+                      ),
+                      child: Text(
+                        'NEW',
+                        style: GoogleFonts.openSans(
+                          color: Colors.white,
+                          fontSize: 7 * scale,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -968,98 +984,192 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
   }
 
   Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: const BoxDecoration(color: Color(0xFF004D8E)),
-      child: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.0 * scale),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.home, 'Home', isSelected: true),
-              _buildNavItem(
-                Icons.receipt_long,
-                'Activity',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AccountInformationPage(
-                        accountNumber: accountNumber,
-                        balance: balance,
-                        isBalanceVisible: isBalanceVisible,
-                        userName: userName,
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+    final double barHeight = 64.0 * scale;
+
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      clipBehavior: Clip.none,
+      children: [
+        // 1. Main Navigation Bar
+        ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16.0)),
+          child: Container(
+            height: barHeight + bottomPadding,
+            decoration: const BoxDecoration(color: Color(0xFF004D8E)),
+            child: SafeArea(
+              top: false,
+              bottom: true,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: _buildNavItem(
+                        Icons.account_balance,
+                        'Home',
+                        isSelected: true,
                       ),
                     ),
-                  );
-                },
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12 * scale),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF1CB5E0),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.qr_code_scanner,
-                      color: Colors.white,
-                      size: 28 * scale,
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: _buildNavItem(
+                        Icons.history,
+                        'Activity',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AccountInformationPage(
+                                accountNumber: accountNumber,
+                                balance: balance,
+                                isBalanceVisible: isBalanceVisible,
+                                userName: userName,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
-                  SizedBox(height: 4 * scale),
-                  Text(
-                    'QRIS',
-                    style: GoogleFonts.openSans(
-                      color: Colors.white,
-                      fontSize: 10 * scale,
-                      fontWeight: FontWeight.bold,
+                  // Middle item: placeholder space and aligned QRIS label image
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            height: 24 * scale,
+                          ), // Matches NavItem icon size
+                          SizedBox(
+                            height: 4 * scale,
+                          ), // Matches NavItem gap size
+                          Image.asset(
+                            'assets/images/Logo QRIS.png',
+                            height: 18 * scale,
+                            fit: BoxFit.contain,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: _buildNavItem(
+                        null,
+                        'For You',
+                        customIcon: Builder(
+                          builder: (context) {
+                            final Color iconColor = Colors.white60;
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Icon(
+                                  Icons.circle_outlined,
+                                  color: iconColor,
+                                  size: 24 * scale,
+                                ),
+                                Icon(
+                                  Icons.star,
+                                  color: iconColor,
+                                  size: 13 * scale,
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: _buildNavItem(
+                        Icons.person_outline,
+                        'My Account',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SettingsPage(
+                                initialName: 'GUSTI FARHAN MUTTAQIN',
+                                initialAccountNumber: accountNumber,
+                                initialBalance: balance,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ],
               ),
-              _buildNavItem(Icons.star_border, 'For You'),
-              _buildNavItem(
-                Icons.person_outline,
-                'My Account',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SettingsPage(
-                        initialName: 'GUSTI FARHAN MUTTAQIN',
-                        initialAccountNumber: accountNumber,
-                        initialBalance: balance,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+
+        // 2. Floating Diamond QRIS Scan Button
+        Positioned(
+          bottom: barHeight + bottomPadding - 23 * scale,
+          child: GestureDetector(
+            onTap: () {
+              // QRIS Scan Tap Action
+            },
+            child: Transform.rotate(
+              angle: 0.785398, // 45 degrees
+              child: Container(
+                width: 44 * scale,
+                height: 44 * scale,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1CB5E0),
+                  borderRadius: BorderRadius.circular(12 * scale),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 6,
+                      offset: const Offset(1, 2),
+                    ),
+                  ],
+                ),
+                child: Transform.rotate(
+                  angle: -0.785398, // Rotate back
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/LogoQRIS_SCAN.png',
+                      width: 24 * scale,
+                      height: 24 * scale,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildNavItem(
-    IconData icon,
+    IconData? icon,
     String label, {
     bool isSelected = false,
     VoidCallback? onTap,
+    Widget? customIcon,
   }) {
     return InkWell(
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: isSelected ? Colors.white : Colors.white60,
-            size: 24 * scale,
-          ),
+          customIcon ??
+              Icon(
+                icon!,
+                color: isSelected ? Colors.white : Colors.white60,
+                size: 24 * scale,
+              ),
           SizedBox(height: 4 * scale),
           Text(
             label,
@@ -1137,7 +1247,7 @@ class _BcaPromoCarouselState extends State<BcaPromoCarousel> {
     return Column(
       children: [
         SizedBox(
-          height: 120 * scale,
+          height: 160 * scale,
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (int page) {

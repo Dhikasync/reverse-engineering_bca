@@ -11,7 +11,7 @@ class ManageTransactionsPage extends StatefulWidget {
 }
 
 class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
-  // Fungsi dialog gabungan untuk "Tambah Transaksi" dan "Edit Transaksi"
+  // Combined dialog function for "Add Transaction" and "Edit Transaction"
   void _showTransactionDialog(
     BuildContext context,
     TransactionProvider provider, {
@@ -20,7 +20,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
   }) {
     final isEdit = tx != null;
 
-    // Jika mode edit, isi dengan data lama. Jika tambah baru, kosongkan.
+    // If edit mode, fill with old data. If adding new, leave blank.
     final TextEditingController dateController = TextEditingController(
       text: isEdit ? tx.dateOrStatus : '',
     );
@@ -30,13 +30,13 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
     final TextEditingController subtitleController = TextEditingController(
       text: isEdit
           ? tx.subtitle
-          : 'TRANSAKSI DEBIT', // Nilai default jika kosong
+          : 'DEBIT TRANSACTION', // Default value if empty
     );
     final TextEditingController amountController = TextEditingController(
       text: isEdit ? tx.amount : 'IDR ',
     );
 
-    // Default debit (merah) untuk transaksi baru
+    // Default debit (red) for new transaction
     bool isDebit = isEdit ? tx.isDebit : true;
 
     showDialog(
@@ -45,7 +45,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: Text(isEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'),
+              title: Text(isEdit ? 'Edit Transaction' : 'Add New Transaction'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -53,8 +53,8 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                     TextField(
                       controller: dateController,
                       decoration: const InputDecoration(
-                        labelText: 'Tanggal / Status',
-                        hintText: 'Contoh: 15\\nMEI\\n2023 atau PEND',
+                        labelText: 'Date / Status',
+                        hintText: 'Example: 15\\nMAY\\n2023 or PEND',
                       ),
                       maxLines: null,
                     ),
@@ -62,52 +62,55 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                     TextField(
                       controller: titleController,
                       decoration: const InputDecoration(
-                        labelText: 'Judul / Nama Transaksi',
+                        labelText: 'Title / Transaction Name',
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: subtitleController,
                       decoration: const InputDecoration(
-                        labelText: 'Sub-judul / Keterangan',
+                        labelText: 'Subtitle / Description',
                       ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: amountController,
                       decoration: const InputDecoration(
-                        labelText: 'Nominal (contoh: 50.000,00)',
+                        labelText: 'Amount (example: 50,000.00)',
                       ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Jenis Transaksi:'),
+                        const Text('Transaction Type:'),
                         DropdownButton<bool>(
                           value: isDebit,
                           items: const [
                             DropdownMenuItem(
                               value: true,
-                              child: Text('Debit (Merah)'),
+                              child: Text('Debit (Red)'),
                             ),
                             DropdownMenuItem(
                               value: false,
-                              child: Text('Kredit (Hijau)'),
+                              child: Text('Credit (Green)'),
                             ),
                           ],
                           onChanged: (val) {
                             if (val != null) {
                               setStateDialog(() {
                                 isDebit = val;
-                                // Ubah subtitle otomatis menyesuaikan jenis, jika ini mode tambah baru
+                                // Auto change subtitle based on type if adding new
                                 if (!isEdit ||
                                     subtitleController.text.startsWith(
                                       'TRANSAKSI',
+                                    ) ||
+                                    subtitleController.text.endsWith(
+                                      'TRANSACTION',
                                     )) {
                                   subtitleController.text = isDebit
-                                      ? 'TRANSAKSI DEBIT'
-                                      : 'TRANSAKSI KREDIT';
+                                      ? 'DEBIT TRANSACTION'
+                                      : 'CREDIT TRANSACTION';
                                 }
                               });
                             }
@@ -121,12 +124,12 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Batal'),
+                  child: const Text('Cancel'),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     if (isEdit && index != null && tx != null) {
-                      // UPDATE transaksi yang sudah ada
+                      // UPDATE existing transaction
                       final updatedTx = tx.copyWith(
                         dateOrStatus: dateController.text,
                         title: titleController.text,
@@ -137,11 +140,11 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                       provider.updateTransaction(index, updatedTx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Transaksi berhasil diubah!'),
+                          content: Text('Transaction successfully updated!'),
                         ),
                       );
                     } else {
-                      // TAMBAH transaksi baru
+                      // ADD new transaction
                       final newTx = TransactionModel(
                         dateOrStatus: dateController.text,
                         title: titleController.text,
@@ -149,11 +152,10 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                         amount: amountController.text,
                         isDebit: isDebit,
                       );
-                      // addTransaction sudah ada di provider Anda, tinggal pakai
                       provider.addTransaction(newTx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Transaksi baru ditambahkan!'),
+                          content: Text('New transaction added!'),
                         ),
                       );
                     }
@@ -163,7 +165,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                     backgroundColor: const Color(0xFF005BAC),
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text('Simpan'),
+                  child: const Text('Save'),
                 ),
               ],
             );
@@ -177,7 +179,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kelola Transaksi'),
+        title: const Text('Manage Transactions'),
         backgroundColor: const Color(0xFF005BAC),
         foregroundColor: Colors.white,
       ),
@@ -188,7 +190,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
           if (transactions.isEmpty) {
             return const Center(
               child: Text(
-                'Belum ada transaksi. Silakan tambah manual atau upload PDF.',
+                'No transactions yet. Please add manually or upload PDF.',
               ),
             );
           }
@@ -196,7 +198,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
           return ListView.builder(
             padding: const EdgeInsets.only(
               bottom: 80,
-            ), // Memberi jarak agar tidak tertutup tombol melayang
+            ), // Give padding so it's not covered by the FAB
             itemCount: transactions.length,
             itemBuilder: (context, index) {
               final tx = transactions[index];
@@ -223,7 +225,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Tombol Edit
+                      // Edit Button
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
                         onPressed: () => _showTransactionDialog(
@@ -233,13 +235,13 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                           tx: tx,
                         ),
                       ),
-                      // Tombol Hapus
+                      // Delete Button
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
                           provider.deleteTransaction(index);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Transaksi dihapus!')),
+                            const SnackBar(content: Text('Transaction deleted!')),
                           );
                         },
                       ),
@@ -251,20 +253,19 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
           );
         },
       ),
-      // --- TOMBOL TAMBAH TRANSAKSI ---
+      // --- ADD TRANSACTION BUTTON ---
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           final provider = Provider.of<TransactionProvider>(
             context,
             listen: false,
           );
-          // Panggil dialog tanpa melempar data (Berarti mode Tambah Baru)
           _showTransactionDialog(context, provider);
         },
         backgroundColor: const Color(0xFF005BAC),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('Tambah Transaksi'),
+        label: const Text('Add Transaction'),
       ),
     );
   }

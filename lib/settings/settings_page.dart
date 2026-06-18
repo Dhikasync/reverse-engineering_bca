@@ -115,7 +115,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Gagal memproses $fileName: Format salah atau password keliru',
+                    'Failed to process $fileName: Incorrect format or password',
                   ),
                 ),
               );
@@ -129,7 +129,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Tidak ada transaksi yang ditemukan dari file yang diproses.',
+                'No transactions found in the processed files.',
               ),
             ),
           );
@@ -142,7 +142,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Berhasil membaca ${allTransactions.length} transaksi dari $successCount file dokumen!',
+                'Successfully read ${allTransactions.length} transactions from $successCount document files!',
               ),
             ),
           );
@@ -157,7 +157,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan sistem: $e')));
+        ).showSnackBar(SnackBar(content: Text('System error occurred: $e')));
       }
     } finally {
       if (mounted) {
@@ -182,13 +182,13 @@ class _SettingsPageState extends State<SettingsPage> {
             controller: _passwordController,
             obscureText: true,
             decoration: const InputDecoration(
-              hintText: 'Masukkan password (DDMMYY)',
+              hintText: 'Enter password (DDMMYY)',
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, null),
-              child: const Text('Lewati File'),
+              child: const Text('Skip File'),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, _passwordController.text),
@@ -202,211 +202,417 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bcaBlue = const Color(0xFF004D8E);
+    final bcaLightBlue = const Color(0xFF1CB5E0);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F8),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Pengaturan'),
-        backgroundColor: const Color(0xFF005BAC),
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Settings',
+          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nama',
-                  border: OutlineInputBorder(),
+        child: Column(
+          children: [
+            // 1. Header Profile Banner (Using AssetImage background and sharp corners)
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/images/background.png'),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
                 ),
+                borderRadius: BorderRadius.zero,
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _accountNumberController,
-                decoration: const InputDecoration(
-                  labelText: 'Nomor Rekening',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
+              padding: EdgeInsets.only(
+                bottom: 24,
+                top: MediaQuery.of(context).padding.top + kToolbarHeight + 16,
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _balanceController,
-                decoration: const InputDecoration(
-                  labelText: 'Saldo',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context, {
-                      'name': _nameController.text,
-                      'accountNumber': _accountNumberController.text,
-                      'balance': _balanceController.text,
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF005BAC),
-                    foregroundColor: Colors.white,
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    child: const CircleAvatar(
+                      radius: 32,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        Icons.person,
+                        size: 40,
+                        color: Color(0xFF004D8E),
+                      ),
+                    ),
                   ),
-                  child: const Text(
-                    'Simpan Pengaturan Profil',
-                    style: TextStyle(fontSize: 16),
+                  const SizedBox(height: 12),
+                  Text(
+                    _nameController.text.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Account Number: ${_accountNumberController.text}',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 32),
-              const Divider(),
-              const SizedBox(height: 16),
-              const Text(
-                'Upload & Kelola Mutasi Rekening',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Pilih satu atau lebih file PDF mutasi untuk di-upload.',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-              const SizedBox(height: 16),
+            ),
 
-              // --- TOMBOL PILIH FILE ---
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: OutlinedButton.icon(
-                  onPressed: _isLoading ? null : _pickFiles,
-                  icon: const Icon(Icons.note_add, color: Color(0xFF005BAC)),
-                  label: const Text(
-                    'Pilih File PDF',
-                    style: TextStyle(color: Color(0xFF005BAC)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 2. Profile Settings Card
+                  _buildSectionHeader('Profile Information', Icons.badge_outlined),
+                  const SizedBox(height: 8),
+                  Card(
+                    elevation: 2,
+                    shadowColor: Colors.black.withOpacity(0.05),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          _buildTextField(
+                            controller: _nameController,
+                            label: 'Name',
+                            icon: Icons.person_outline,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _accountNumberController,
+                            label: 'Account Number',
+                            icon: Icons.credit_card_outlined,
+                            keyboardType: TextInputType.number,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _balanceController,
+                            label: 'Balance',
+                            icon: Icons.account_balance_wallet_outlined,
+                            keyboardType: TextInputType.number,
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context, {
+                                  'name': _nameController.text,
+                                  'accountNumber': _accountNumberController.text,
+                                  'balance': _balanceController.text,
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: bcaBlue,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.zero,
+                                ),
+                              ),
+                              child: const Text(
+                                'Save Profile Settings',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF005BAC)),
-                  ),
-                ),
-              ),
 
-              // --- DAFTAR FILE YANG DIPILIH (STAGING AREA) ---
-              if (_selectedFiles.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'File yang siap diproses:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade300),
+                  const SizedBox(height: 28),
+
+                  // 3. Document Management Card
+                  _buildSectionHeader('Upload & Manage Statement', Icons.cloud_upload_outlined),
+                  const SizedBox(height: 8),
+                  Card(
+                    elevation: 2,
+                    shadowColor: Colors.black.withOpacity(0.05),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Upload Statement PDF',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF003366),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Select one or more statement PDF files to upload.',
+                            style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // File Selector Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: OutlinedButton.icon(
+                              onPressed: _isLoading ? null : _pickFiles,
+                              icon: Icon(Icons.note_add_outlined, color: bcaBlue),
+                              label: Text(
+                                'Select PDF File',
+                                style: TextStyle(color: bcaBlue, fontWeight: FontWeight.w600),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: bcaBlue.withOpacity(0.5)),
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.zero,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Staging List
+                          if (_selectedFiles.isNotEmpty) ...[
+                            const SizedBox(height: 20),
+                            Text(
+                              'Files ready to process (${_selectedFiles.length}):',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                color: Color(0xFF003366),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.zero,
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: _selectedFiles.length,
+                                separatorBuilder: (context, index) =>
+                                    Divider(height: 1, color: Colors.grey.shade200),
+                                itemBuilder: (context, index) {
+                                  final file = _selectedFiles[index];
+                                  return ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    leading: const CircleAvatar(
+                                      backgroundColor: Color(0xFFFDE8E8),
+                                      child: Icon(
+                                        Icons.picture_as_pdf,
+                                        color: Colors.redAccent,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    title: Text(
+                                      file.name,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    trailing: IconButton(
+                                      icon: const Icon(Icons.cancel, color: Colors.grey),
+                                      onPressed: _isLoading
+                                          ? null
+                                          : () => _removeSelectedFile(index),
+                                      tooltip: 'Cancel processing this file',
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Process Button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                onPressed: _isLoading ? null : _processSelectedFiles,
+                                icon: _isLoading
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.upload_file),
+                                label: Text(
+                                  _isLoading
+                                      ? 'Processing Documents...'
+                                      : 'Process ${_selectedFiles.length} Document Files',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: bcaBlue,
+                                  foregroundColor: Colors.white,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.zero,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _selectedFiles.length,
-                    separatorBuilder: (context, index) =>
-                        const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final file = _selectedFiles[index];
-                      return ListTile(
-                        leading: const Icon(
-                          Icons.picture_as_pdf,
-                          color: Colors.redAccent,
+
+                  const SizedBox(height: 20),
+
+                  // 4. Manage Transactions Shortcut Card
+                  Card(
+                    elevation: 2,
+                    shadowColor: Colors.black.withOpacity(0.05),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                    color: Colors.white,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFFE5F6FA),
+                        child: Icon(Icons.edit_note, color: bcaBlue),
+                      ),
+                      title: const Text(
+                        'Manage Manual Transactions',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF003366),
                         ),
-                        title: Text(
-                          file.name,
-                          style: const TextStyle(fontSize: 13),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.cancel, color: Colors.grey),
-                          onPressed: _isLoading
-                              ? null
-                              : () => _removeSelectedFile(index),
-                          tooltip: 'Batal proses file ini',
-                        ),
+                      ),
+                      subtitle: const Text(
+                        'Edit, delete, or add transactions manually',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      trailing: Icon(Icons.arrow_forward_ios, size: 16, color: bcaBlue),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ManageTransactionsPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // 5. System Status Indicator
+                  Consumer<TransactionProvider>(
+                    builder: (context, provider, child) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_circle_outline, color: Colors.green.shade600, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Status: ${provider.transactions.length} transactions active in system.',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green.shade600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),
-                ),
-                const SizedBox(height: 16),
-
-                // --- TOMBOL PROSES SEMUA FILE ---
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _processSelectedFiles,
-                    icon: _isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Icon(Icons.upload_file),
-                    label: Text(
-                      _isLoading
-                          ? 'Memproses Dokumen...'
-                          : 'Proses ${_selectedFiles.length} File Dokumen',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF005BAC),
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-
-              // --- TOMBOL EDIT / KELOLA TRANSAKSI ---
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ManageTransactionsPage(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_note, color: Color(0xFF005BAC)),
-                  label: const Text(
-                    'Kelola / Tambah Transaksi Manual',
-                    style: TextStyle(color: Color(0xFF005BAC)),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF005BAC)),
-                  ),
-                ),
+                ],
               ),
-              const SizedBox(height: 16),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-              Consumer<TransactionProvider>(
-                builder: (context, provider, child) {
-                  return Text(
-                    'Status: ${provider.transactions.length} transaksi masuk ke dalam sistem.',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  );
-                },
-              ),
-            ],
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF004D8E)),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF004D8E),
+            letterSpacing: 0.5,
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.normal),
+        prefixIcon: Icon(icon, color: const Color(0xFF004D8E), size: 20),
+        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        border: const OutlineInputBorder(
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: Color(0xFFEEEEEE)),
+        ),
+        enabledBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: Color(0xFFEEEEEE)),
+        ),
+        focusedBorder: const OutlineInputBorder(
+          borderRadius: BorderRadius.zero,
+          borderSide: BorderSide(color: Color(0xFF004D8E), width: 1.5),
+        ),
+        filled: true,
+        fillColor: const Color(0xFFFAFAFA),
       ),
     );
   }
