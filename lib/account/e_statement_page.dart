@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:path_provider/path_provider.dart';
 import '../providers/transaction_provider.dart';
+import '../models/transaction.dart';
 
 class EStatementPage extends StatefulWidget {
   final String userName;
@@ -117,6 +118,7 @@ class _EStatementPageState extends State<EStatementPage> {
     int totalPages,
     String periodStr,
     PdfBitmap? logo,
+    TransactionProvider provider,
   ) {
     final PdfGraphics graphics = page.graphics;
 
@@ -161,14 +163,14 @@ class _EStatementPageState extends State<EStatementPage> {
     }
 
     graphics.drawString(
-      'REKENING TAHAPAN XPRESI',
+      widget.accountTypeDetail.toUpperCase(),
       fontTitle,
       bounds: const Rect.fromLTWH(0.0, 25.0, 595.0, 20.0),
       format: PdfStringFormat(alignment: PdfTextAlignment.center),
     );
 
     graphics.drawString(
-      'KCP PERAK',
+      provider.branch,
       fontBold,
       bounds: const Rect.fromLTWH(35.0, 55.0, 200.0, 10.0),
     );
@@ -193,31 +195,15 @@ class _EStatementPageState extends State<EStatementPage> {
       fontBold,
       bounds: Rect.fromLTWH(textLeftX, textLeftY, 240.0, 10.0),
     );
-    graphics.drawString(
-      'TANDES',
-      fontBold,
-      bounds: Rect.fromLTWH(textLeftX, textLeftY + 14.0, 240.0, 10.0),
-    );
-    graphics.drawString(
-      'RT005 RW006 JAWA TIMUR',
-      fontBold,
-      bounds: Rect.fromLTWH(textLeftX, textLeftY + 28.0, 240.0, 10.0),
-    );
-    graphics.drawString(
-      'GADEL TENGAH II NO 05',
-      fontBold,
-      bounds: Rect.fromLTWH(textLeftX, textLeftY + 42.0, 240.0, 10.0),
-    );
-    graphics.drawString(
-      'SURABAYA 60186',
-      fontBold,
-      bounds: Rect.fromLTWH(textLeftX, textLeftY + 56.0, 240.0, 10.0),
-    );
-    graphics.drawString(
-      'INDONESIA',
-      fontBold,
-      bounds: Rect.fromLTWH(textLeftX, textLeftY + 70.0, 240.0, 10.0),
-    );
+
+    for (int i = 0; i < provider.address.length; i++) {
+      textLeftY += 14.0;
+      graphics.drawString(
+        provider.address[i],
+        fontBold,
+        bounds: Rect.fromLTWH(textLeftX, textLeftY, 240.0, 10.0),
+      );
+    }
 
     double rightBoxX = 310.0;
 
@@ -412,7 +398,71 @@ class _EStatementPageState extends State<EStatementPage> {
 
   Future<void> _exportPdf(String selectedPeriod) async {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
-    final transactions = provider.transactions;
+    final allTransactions = provider.transactions;
+
+    // Helper mengubah nama bulan dari ListView ("Agustus") ke format di List Transaksi ("Aug")
+    String getShortMonth(String indonesianMonth) {
+      final m = indonesianMonth.toLowerCase();
+      if (m.contains('jan')) return 'Jan';
+      if (m.contains('feb')) return 'Feb';
+      if (m.contains('mar')) return 'Mar';
+      if (m.contains('apr')) return 'Apr';
+      if (m.contains('mei')) return 'May';
+      if (m.contains('jun')) return 'Jun';
+      if (m.contains('jul')) return 'Jul';
+      if (m.contains('agu')) return 'Aug';
+      if (m.contains('sep')) return 'Sep';
+      if (m.contains('okt')) return 'Oct';
+      if (m.contains('nov')) return 'Nov';
+      if (m.contains('des')) return 'Dec';
+      return '';
+    }
+
+    final periodParts = selectedPeriod.split(' ');
+    String targetMonthIndo = periodParts.isNotEmpty ? periodParts[0] : '';
+    String targetYear = periodParts.length > 1 ? periodParts[1] : '';
+    String targetShortMonth = getShortMonth(targetMonthIndo);
+
+    // Filter transaksi untuk bulan yang dipilih & hitung Saldo Awal Dinamisnya
+    double runningBalance = provider.startingBalance;
+    List<TransactionModel> targetTransactions = [];
+    double startingBalanceForMonth = runningBalance;
+    bool foundTargetMonth = false;
+
+    for (var tx in allTransactions) {
+      final parts = tx.dateOrStatus.split('\n');
+      if (parts.length >= 3) {
+        String txMonth = parts[1];
+        String txYear = parts[2];
+
+        bool isTargetMonth =
+            txMonth.toLowerCase() == targetShortMonth.toLowerCase() &&
+            txYear == targetYear;
+
+        // Simpan saldo awal sesaat sebelum masuk ke bulan target
+        if (isTargetMonth && !foundTargetMonth) {
+          foundTargetMonth = true;
+          startingBalanceForMonth = runningBalance;
+        }
+
+        // Ambil transaksi yang sesuai bulan saja
+        if (isTargetMonth) {
+          targetTransactions.add(tx);
+        }
+      }
+
+      // Update Saldo berjalan seperti simulasi rekening bank sungguhan
+      String rawAmount = tx.amount
+          .replaceAll('IDR', '')
+          .replaceAll(',', '')
+          .trim();
+      double amount = double.tryParse(rawAmount) ?? 0.0;
+      if (tx.isDebit) {
+        runningBalance -= amount;
+      } else {
+        runningBalance += amount;
+      }
+    }
 
     try {
       final PdfDocument document = PdfDocument();
@@ -431,8 +481,7 @@ class _EStatementPageState extends State<EStatementPage> {
         debugPrint('Logo BCA tidak ditemukan di path: $e');
       }
 
-      double startingBalance = provider.startingBalance;
-      double currentBalance = startingBalance;
+      double currentBalance = startingBalanceForMonth;
       double mutasiCr = 0.0;
       double mutasiDb = 0.0;
       int countCr = 0;
@@ -441,11 +490,30 @@ class _EStatementPageState extends State<EStatementPage> {
       PdfPage currentPage = document.pages.add();
       double currentY = 282.0;
 
-      String saldoAwalDate = "01/10";
-      if (transactions.isNotEmpty) {
-        saldoAwalDate = _formatDateForPdf(transactions.first.dateOrStatus);
-        if (saldoAwalDate.contains('/')) {
-          saldoAwalDate = "01/${saldoAwalDate.split('/')[1]}";
+      String getMonthNumberFromPeriod(String p) {
+        final m = p.toLowerCase();
+        if (m.contains('jan')) return '01';
+        if (m.contains('feb')) return '02';
+        if (m.contains('mar')) return '03';
+        if (m.contains('apr')) return '04';
+        if (m.contains('may') || m.contains('mei')) return '05';
+        if (m.contains('jun')) return '06';
+        if (m.contains('jul')) return '07';
+        if (m.contains('aug') || m.contains('agu')) return '08';
+        if (m.contains('sep')) return '09';
+        if (m.contains('oct') || m.contains('okt')) return '10';
+        if (m.contains('nov')) return '11';
+        if (m.contains('dec') || m.contains('des')) return '12';
+        return '01';
+      }
+
+      String saldoAwalDate = "01/${getMonthNumberFromPeriod(selectedPeriod)}";
+      if (targetTransactions.isNotEmpty) {
+        String firstTxDate = _formatDateForPdf(
+          targetTransactions.first.dateOrStatus,
+        );
+        if (firstTxDate.contains('/')) {
+          saldoAwalDate = "01/${firstTxDate.split('/')[1]}";
         }
       }
 
@@ -467,7 +535,7 @@ class _EStatementPageState extends State<EStatementPage> {
         bounds: Rect.fromLTWH(88.0, currentY, 150.0, 10.0),
       );
       currentPage.graphics.drawString(
-        formatCurrency(startingBalance),
+        formatCurrency(startingBalanceForMonth),
         fontRegular,
         bounds: Rect.fromLTWH(465.0, currentY, 100.0, 10.0),
         format: PdfStringFormat(alignment: PdfTextAlignment.right),
@@ -475,7 +543,8 @@ class _EStatementPageState extends State<EStatementPage> {
 
       currentY += 16.0;
 
-      for (var t in transactions) {
+      // Loop menggunakan transaksi yang TEPAT di bulan tersebut
+      for (var t in targetTransactions) {
         String rawAmount = t.amount
             .replaceAll('IDR', '')
             .replaceAll(',', '')
@@ -497,7 +566,6 @@ class _EStatementPageState extends State<EStatementPage> {
             .map((l) => l.trim())
             .where((l) => l.isNotEmpty)
             .toList();
-
         double rowHeight = 12.0 * titleLines.length + 5.0;
 
         if (currentY + rowHeight > 760.0) {
@@ -508,7 +576,7 @@ class _EStatementPageState extends State<EStatementPage> {
             format: PdfStringFormat(alignment: PdfTextAlignment.right),
           );
           currentPage = document.pages.add();
-          currentY = 272.0;
+          currentY = 285.0; // Jarak aman page baru
         }
 
         currentPage.graphics.drawString(
@@ -579,7 +647,7 @@ class _EStatementPageState extends State<EStatementPage> {
         bounds: Rect.fromLTWH(sumColonX, currentY, 10, 10),
       );
       currentPage.graphics.drawString(
-        formatCurrency(startingBalance),
+        formatCurrency(startingBalanceForMonth),
         fontRegular,
         bounds: Rect.fromLTWH(sumValX, currentY, 100, 10),
         format: PdfStringFormat(alignment: PdfTextAlignment.right),
@@ -658,6 +726,7 @@ class _EStatementPageState extends State<EStatementPage> {
           totalPages,
           periodStr,
           logoBitmap,
+          provider,
         );
       }
 
@@ -682,9 +751,7 @@ class _EStatementPageState extends State<EStatementPage> {
     }
   }
 
-  // --- FUNGSI IKON YANG DIPERBARUI KE WARNA CYAN ---
   Widget _buildPeriodIcon({required bool isSpecial}) {
-    // Diubah ke warna Light Blue / Cyan agar sesuai gambar target
     final color = isSpecial ? const Color(0xFFBDBDBD) : const Color(0xFF03A9F4);
     return SizedBox(
       width: 32,
@@ -795,16 +862,8 @@ class _EStatementPageState extends State<EStatementPage> {
                           padding: const EdgeInsets.all(1.5),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
-                            // --- GRADASI DIPERBARUI KE CYAN ---
                             gradient: const LinearGradient(
-                              colors: [
-                                Color(
-                                  0xFF03A9F4,
-                                ), // Cyan / Biru muda yang lebih terang (Mulai dari Kiri Atas)
-                                Color(
-                                  0xFF005DAA,
-                                ), // Biru standar BCA (Berakhir di Kanan Bawah)
-                              ],
+                              colors: [Color(0xFF03A9F4), Color(0xFF005DAA)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -933,7 +992,7 @@ class _EStatementPageState extends State<EStatementPage> {
                                     size: 24,
                                   ),
                                   onTap: () {
-                                    // Aksi
+                                    // Aksi tambahan untuk ambil file lain
                                   },
                                 ),
                               );
