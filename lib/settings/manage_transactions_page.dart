@@ -11,26 +11,33 @@ class ManageTransactionsPage extends StatefulWidget {
 }
 
 class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
-  // Fungsi untuk menampilkan Dialog Edit Transaksi
-  void _showEditDialog(
+  // Fungsi dialog gabungan untuk "Tambah Transaksi" dan "Edit Transaksi"
+  void _showTransactionDialog(
     BuildContext context,
-    int index,
-    TransactionModel tx,
-    TransactionProvider provider,
-  ) {
+    TransactionProvider provider, {
+    int? index,
+    TransactionModel? tx,
+  }) {
+    final isEdit = tx != null;
+
+    // Jika mode edit, isi dengan data lama. Jika tambah baru, kosongkan.
     final TextEditingController dateController = TextEditingController(
-      text: tx.dateOrStatus,
+      text: isEdit ? tx.dateOrStatus : '',
     );
     final TextEditingController titleController = TextEditingController(
-      text: tx.title,
+      text: isEdit ? tx.title : '',
     );
     final TextEditingController subtitleController = TextEditingController(
-      text: tx.subtitle,
+      text: isEdit
+          ? tx.subtitle
+          : 'TRANSAKSI DEBIT', // Nilai default jika kosong
     );
     final TextEditingController amountController = TextEditingController(
-      text: tx.amount,
+      text: isEdit ? tx.amount : 'IDR ',
     );
-    bool isDebit = tx.isDebit;
+
+    // Default debit (merah) untuk transaksi baru
+    bool isDebit = isEdit ? tx.isDebit : true;
 
     showDialog(
       context: context,
@@ -38,7 +45,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text('Edit Transaksi'),
+              title: Text(isEdit ? 'Edit Transaksi' : 'Tambah Transaksi Baru'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -91,7 +98,18 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                           ],
                           onChanged: (val) {
                             if (val != null) {
-                              setStateDialog(() => isDebit = val);
+                              setStateDialog(() {
+                                isDebit = val;
+                                // Ubah subtitle otomatis menyesuaikan jenis, jika ini mode tambah baru
+                                if (!isEdit ||
+                                    subtitleController.text.startsWith(
+                                      'TRANSAKSI',
+                                    )) {
+                                  subtitleController.text = isDebit
+                                      ? 'TRANSAKSI DEBIT'
+                                      : 'TRANSAKSI KREDIT';
+                                }
+                              });
                             }
                           },
                         ),
@@ -107,21 +125,39 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // Update transaksi
-                    final updatedTx = tx.copyWith(
-                      dateOrStatus: dateController.text,
-                      title: titleController.text,
-                      subtitle: subtitleController.text,
-                      amount: amountController.text,
-                      isDebit: isDebit,
-                    );
-                    provider.updateTransaction(index, updatedTx);
+                    if (isEdit && index != null && tx != null) {
+                      // UPDATE transaksi yang sudah ada
+                      final updatedTx = tx.copyWith(
+                        dateOrStatus: dateController.text,
+                        title: titleController.text,
+                        subtitle: subtitleController.text,
+                        amount: amountController.text,
+                        isDebit: isDebit,
+                      );
+                      provider.updateTransaction(index, updatedTx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Transaksi berhasil diubah!'),
+                        ),
+                      );
+                    } else {
+                      // TAMBAH transaksi baru
+                      final newTx = TransactionModel(
+                        dateOrStatus: dateController.text,
+                        title: titleController.text,
+                        subtitle: subtitleController.text,
+                        amount: amountController.text,
+                        isDebit: isDebit,
+                      );
+                      // addTransaction sudah ada di provider Anda, tinggal pakai
+                      provider.addTransaction(newTx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Transaksi baru ditambahkan!'),
+                        ),
+                      );
+                    }
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Transaksi berhasil diubah!'),
-                      ),
-                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF005BAC),
@@ -152,12 +188,15 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
           if (transactions.isEmpty) {
             return const Center(
               child: Text(
-                'Belum ada transaksi. Silakan upload PDF terlebih dahulu.',
+                'Belum ada transaksi. Silakan tambah manual atau upload PDF.',
               ),
             );
           }
 
           return ListView.builder(
+            padding: const EdgeInsets.only(
+              bottom: 80,
+            ), // Memberi jarak agar tidak tertutup tombol melayang
             itemCount: transactions.length,
             itemBuilder: (context, index) {
               final tx = transactions[index];
@@ -184,11 +223,17 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Tombol Edit
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () =>
-                            _showEditDialog(context, index, tx, provider),
+                        onPressed: () => _showTransactionDialog(
+                          context,
+                          provider,
+                          index: index,
+                          tx: tx,
+                        ),
                       ),
+                      // Tombol Hapus
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
@@ -205,6 +250,21 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
             },
           );
         },
+      ),
+      // --- TOMBOL TAMBAH TRANSAKSI ---
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          final provider = Provider.of<TransactionProvider>(
+            context,
+            listen: false,
+          );
+          // Panggil dialog tanpa melempar data (Berarti mode Tambah Baru)
+          _showTransactionDialog(context, provider);
+        },
+        backgroundColor: const Color(0xFF005BAC),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Tambah Transaksi'),
       ),
     );
   }
