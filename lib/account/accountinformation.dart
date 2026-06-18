@@ -254,11 +254,14 @@ class _AccountInformationPageState extends State<AccountInformationPage>
               // Buka halaman e-Statement secara penuh (Full Page)
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => EStatementPage(
-                  userName: widget.userName,
-                  accountNumber: widget.accountNumber,
-                  balance: widget.balance,
-                )),
+                MaterialPageRoute(
+                  builder: (context) => EStatementPage(
+                    userName: widget.userName,
+                    accountNumber: widget.accountNumber,
+                    balance: widget.balance,
+                    accountTypeDetail: '',
+                  ),
+                ),
               );
             },
             child: Container(

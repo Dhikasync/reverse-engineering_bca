@@ -13,12 +13,14 @@ class EStatementPage extends StatefulWidget {
   final String userName;
   final String accountNumber;
   final String balance;
+  final String accountTypeDetail;
 
   const EStatementPage({
     super.key,
     required this.userName,
     required this.accountNumber,
     required this.balance,
+    required this.accountTypeDetail,
   });
 
   @override
@@ -27,13 +29,12 @@ class EStatementPage extends StatefulWidget {
 
 class _EStatementPageState extends State<EStatementPage> {
   String _formatMonthDisplay(String rawMonth) {
-    return rawMonth
-        .split(' ')
-        .map((word) {
-          if (word.isEmpty) return '';
-          return word[0].toUpperCase() + word.substring(1).toLowerCase();
-        })
-        .join(' ');
+    return rawMonth.toUpperCase();
+  }
+
+  String _formatAccountNumber(String rawNumber) {
+    if (rawNumber.length < 10) return rawNumber;
+    return '${rawNumber.substring(0, 3)} - ${rawNumber.substring(3, 6)} - ${rawNumber.substring(6)}';
   }
 
   String _formatDateForPdf(String dateOrStatus) {
@@ -144,7 +145,6 @@ class _EStatementPageState extends State<EStatementPage> {
 
     final PdfPen linePen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
 
-    // 1. Logo BCA
     if (logo != null) {
       graphics.drawImage(logo, const Rect.fromLTWH(25.0, 20.0, 75.0, 25.0));
     } else {
@@ -160,7 +160,6 @@ class _EStatementPageState extends State<EStatementPage> {
       );
     }
 
-    // 2. Judul Rekening
     graphics.drawString(
       'REKENING TAHAPAN XPRESI',
       fontTitle,
@@ -168,16 +167,12 @@ class _EStatementPageState extends State<EStatementPage> {
       format: PdfStringFormat(alignment: PdfTextAlignment.center),
     );
 
-    // 3. Nama Cabang
     graphics.drawString(
       'KCP PERAK',
       fontBold,
       bounds: const Rect.fromLTWH(35.0, 55.0, 200.0, 10.0),
     );
 
-    // ==========================================
-    // 4. KOTAK KIRI (Nama & Alamat Nasabah)
-    // ==========================================
     double boxY = 72.0;
     double boxWidth = 260.0;
     double boxHeight = 94.0;
@@ -193,7 +188,6 @@ class _EStatementPageState extends State<EStatementPage> {
     double textLeftX = 35.0;
     double textLeftY = boxY + 10.0;
 
-    // Menjadikan seluruh tulisan di kotak kiri BOLD
     graphics.drawString(
       widget.userName.toUpperCase(),
       fontBold,
@@ -225,9 +219,6 @@ class _EStatementPageState extends State<EStatementPage> {
       bounds: Rect.fromLTWH(textLeftX, textLeftY + 70.0, 240.0, 10.0),
     );
 
-    // ==========================================
-    // 5. KOTAK KANAN (Info Rekening)
-    // ==========================================
     double rightBoxX = 310.0;
 
     _drawRoundedRect(
@@ -242,7 +233,6 @@ class _EStatementPageState extends State<EStatementPage> {
     double colonX = rightBoxX + 85.0;
     double valueX = rightBoxX + 95.0;
 
-    // Menjadikan seluruh tulisan di kotak kanan BOLD
     graphics.drawString(
       'NO. REKENING',
       fontBold,
@@ -307,9 +297,6 @@ class _EStatementPageState extends State<EStatementPage> {
       bounds: Rect.fromLTWH(valueX, textRightY + 48.0, 120.0, 10.0),
     );
 
-    // ==========================================
-    // 6. KOTAK CATATAN (2 Kolom rata kiri-kanan)
-    // ==========================================
     double catBoxY = 176.0;
     double catBoxHeight = 65.0;
 
@@ -331,7 +318,6 @@ class _EStatementPageState extends State<EStatementPage> {
       lineSpacing: 5.0,
     );
 
-    // BULLET POINT KOLOM KIRI (Hanging Indent)
     graphics.drawString(
       '•',
       fontSmallItalic,
@@ -344,7 +330,6 @@ class _EStatementPageState extends State<EStatementPage> {
       format: justifyFormat,
     );
 
-    // BULLET POINT KOLOM KANAN (Hanging Indent)
     graphics.drawString(
       '•',
       fontSmallItalic,
@@ -357,9 +342,6 @@ class _EStatementPageState extends State<EStatementPage> {
       format: justifyFormat,
     );
 
-    // ==========================================
-    // 7. HEADER TABEL
-    // ==========================================
     double tableHeaderY = 252.0;
     double headerH = 20.0;
 
@@ -700,15 +682,54 @@ class _EStatementPageState extends State<EStatementPage> {
     }
   }
 
+  // --- FUNGSI IKON YANG DIPERBARUI KE WARNA CYAN ---
+  Widget _buildPeriodIcon({required bool isSpecial}) {
+    // Diubah ke warna Light Blue / Cyan agar sesuai gambar target
+    final color = isSpecial ? const Color(0xFFBDBDBD) : const Color(0xFF03A9F4);
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            child: Icon(Icons.description, color: color, size: 28),
+          ),
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              child: const Text(
+                'Rp',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 6,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<TransactionProvider>(context);
     final months = provider.uploadedMonths;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF004D8E),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
@@ -720,103 +741,215 @@ class _EStatementPageState extends State<EStatementPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'e-Statement',
+          'Savings & Current Accounts',
           style: GoogleFonts.openSans(
             color: Colors.white,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              'Info',
-              style: GoogleFonts.openSans(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
-          Material(
-            color: Colors.white,
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 4,
-              ),
-              title: Text(
-                'Pilih Bulan dan Tahun',
-                style: GoogleFonts.openSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF003366),
-                ),
-              ),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () {},
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/background.png'),
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
           ),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20.0,
-              vertical: 8.0,
-            ),
-            child: Text(
-              'Bulan yang diunduh',
-              style: GoogleFonts.openSans(
-                color: Colors.grey.shade600,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Material(
-            color: Colors.white,
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: months.length,
-              separatorBuilder: (context, index) => const Divider(
-                height: 1,
-                thickness: 1,
-                indent: 20,
-                color: Color(0xFFEEEEEE),
-              ),
-              itemBuilder: (context, index) {
-                final monthStr = months[index];
-                final displayMonth = _formatMonthDisplay(monthStr);
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 2,
-                  ),
-                  title: Text(
-                    displayMonth,
-                    style: GoogleFonts.openSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF003366),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
                     ),
                   ),
-                  trailing: const Icon(Icons.file_download, color: Colors.blue),
-                  onTap: () {
-                    _exportPdf(monthStr);
-                  },
-                );
-              },
-            ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Account No.',
+                          style: GoogleFonts.openSans(
+                            color: const Color(0xFF003366),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(1.5),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            // --- GRADASI DIPERBARUI KE CYAN ---
+                            gradient: const LinearGradient(
+                              colors: [
+                                Color(
+                                  0xFF03A9F4,
+                                ), // Cyan / Biru muda yang lebih terang (Mulai dari Kiri Atas)
+                                Color(
+                                  0xFF005DAA,
+                                ), // Biru standar BCA (Berakhir di Kanan Bawah)
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14.5),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _formatAccountNumber(widget.accountNumber),
+                                  style: GoogleFonts.openSans(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF003366),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.accountTypeDetail,
+                                  style: GoogleFonts.openSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: const Color(0xFF9E9E9E),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        Text(
+                          'Select Period',
+                          style: GoogleFonts.openSans(
+                            color: const Color(0xFF003366),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: months.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index < months.length) {
+                              final monthStr = months[index];
+                              final displayMonth = _formatMonthDisplay(
+                                monthStr,
+                              );
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: const Color(0xFFE0E0E0),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 4,
+                                  ),
+                                  leading: _buildPeriodIcon(isSpecial: false),
+                                  title: Text(
+                                    displayMonth,
+                                    style: GoogleFonts.openSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF003366),
+                                    ),
+                                  ),
+                                  trailing: Text(
+                                    'SHOW',
+                                    style: GoogleFonts.openSans(
+                                      color: const Color(0xFF003366),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  onTap: () => _exportPdf(monthStr),
+                                ),
+                              );
+                            } else {
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: const Color(0xFFE0E0E0),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 4,
+                                  ),
+                                  leading: _buildPeriodIcon(isSpecial: true),
+                                  title: Text(
+                                    'Select Another Period',
+                                    style: GoogleFonts.openSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF003366),
+                                    ),
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.more_horiz,
+                                    color: Color(0xFF003366),
+                                    size: 24,
+                                  ),
+                                  onTap: () {
+                                    // Aksi
+                                  },
+                                ),
+                              );
+                            }
+                          },
+                        ),
+
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          Container(height: 1, color: const Color(0xFFEEEEEE)),
-        ],
+        ),
       ),
     );
   }
