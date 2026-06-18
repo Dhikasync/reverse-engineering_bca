@@ -400,7 +400,6 @@ class _EStatementPageState extends State<EStatementPage> {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
     final allTransactions = provider.transactions;
 
-    // Helper mengubah nama bulan dari ListView ("Agustus") ke format di List Transaksi ("Aug")
     String getShortMonth(String indonesianMonth) {
       final m = indonesianMonth.toLowerCase();
       if (m.contains('jan')) return 'Jan';
@@ -423,7 +422,6 @@ class _EStatementPageState extends State<EStatementPage> {
     String targetYear = periodParts.length > 1 ? periodParts[1] : '';
     String targetShortMonth = getShortMonth(targetMonthIndo);
 
-    // Filter transaksi untuk bulan yang dipilih & hitung Saldo Awal Dinamisnya
     double runningBalance = provider.startingBalance;
     List<TransactionModel> targetTransactions = [];
     double startingBalanceForMonth = runningBalance;
@@ -439,19 +437,16 @@ class _EStatementPageState extends State<EStatementPage> {
             txMonth.toLowerCase() == targetShortMonth.toLowerCase() &&
             txYear == targetYear;
 
-        // Simpan saldo awal sesaat sebelum masuk ke bulan target
         if (isTargetMonth && !foundTargetMonth) {
           foundTargetMonth = true;
           startingBalanceForMonth = runningBalance;
         }
 
-        // Ambil transaksi yang sesuai bulan saja
         if (isTargetMonth) {
           targetTransactions.add(tx);
         }
       }
 
-      // Update Saldo berjalan seperti simulasi rekening bank sungguhan
       String rawAmount = tx.amount
           .replaceAll('IDR', '')
           .replaceAll(',', '')
@@ -543,7 +538,6 @@ class _EStatementPageState extends State<EStatementPage> {
 
       currentY += 16.0;
 
-      // Loop menggunakan transaksi yang TEPAT di bulan tersebut
       for (var t in targetTransactions) {
         String rawAmount = t.amount
             .replaceAll('IDR', '')
@@ -576,7 +570,7 @@ class _EStatementPageState extends State<EStatementPage> {
             format: PdfStringFormat(alignment: PdfTextAlignment.right),
           );
           currentPage = document.pages.add();
-          currentY = 285.0; // Jarak aman page baru
+          currentY = 285.0;
         }
 
         currentPage.graphics.drawString(
@@ -859,7 +853,9 @@ class _EStatementPageState extends State<EStatementPage> {
 
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(1.5),
+                          padding: const EdgeInsets.all(
+                            1.0,
+                          ), // Border dibuat sangat tipis (sebelumnya 1.5)
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             gradient: const LinearGradient(
@@ -870,33 +866,39 @@ class _EStatementPageState extends State<EStatementPage> {
                           ),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 16,
+                              horizontal: 16,
+                              vertical: 14, // Padding diratakan
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(14.5),
+                              borderRadius: BorderRadius.circular(15.0),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize
+                                  .min, // Kunci utama agar fit konten
                               children: [
                                 Text(
                                   _formatAccountNumber(widget.accountNumber),
                                   style: GoogleFonts.openSans(
-                                    fontSize: 22,
+                                    fontSize: 18,
                                     fontWeight: FontWeight.w700,
                                     color: const Color(0xFF003366),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  widget.accountTypeDetail,
+                                  'TAHAPAN - IDR',
                                   style: GoogleFonts.openSans(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: const Color(0xFF9E9E9E),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(
+                                      0xFF003366,
+                                    ).withOpacity(0.4),
                                   ),
                                 ),
+                                // Text widget.accountTypeDetail dihapus karena posisinya
+                                // sudah direpresentasikan oleh TAHAPAN - IDR secara visual
                               ],
                             ),
                           ),

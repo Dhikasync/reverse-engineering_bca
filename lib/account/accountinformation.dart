@@ -321,14 +321,80 @@ class _AccountInformationPageState extends State<AccountInformationPage>
       );
     }
 
+    // Fungsi Helper untuk menerjemahkan singkatan bulan ke Bahasa Indonesia
+    String mapMonthToIndonesian(String monthShort) {
+      switch (monthShort.toLowerCase()) {
+        case 'jan':
+          return 'Januari';
+        case 'feb':
+          return 'Februari';
+        case 'mar':
+          return 'Maret';
+        case 'apr':
+          return 'April';
+        case 'may':
+          return 'Mei';
+        case 'jun':
+          return 'Juni';
+        case 'jul':
+          return 'Juli';
+        case 'aug':
+          return 'Agustus';
+        case 'sep':
+          return 'September';
+        case 'oct':
+          return 'Oktober';
+        case 'nov':
+          return 'November';
+        case 'dec':
+          return 'Desember';
+        default:
+          return monthShort;
+      }
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      itemCount: transactions.length + 1,
+      itemCount: transactions
+          .length, // Ubah menjadi length karena tidak perlu dummy item index 0 lagi
       itemBuilder: (context, index) {
-        if (index == 0) {
+        final tx = transactions[index];
+        bool showHeader = false;
+        String displayMonth = "";
+
+        // Ekstrak bulan dan tahun dari tx.dateOrStatus (format: 15\nAUG\n2023)
+        List<String> parts = tx.dateOrStatus.split('\n');
+        if (parts.length >= 3) {
+          String monthShort = parts[1];
+          // String year = parts[2];
+          String indoMonth = mapMonthToIndonesian(monthShort);
+          displayMonth = "$indoMonth";
+
+          if (index == 0) {
+            showHeader = true; // Selalu tampilkan header di awal list
+          } else {
+            // Bandingkan dengan bulan pada transaksi sebelumnya
+            final prevTx = transactions[index - 1];
+            List<String> prevParts = prevTx.dateOrStatus.split('\n');
+            if (prevParts.length >= 3) {
+              String prevMonthShort = prevParts[1];
+              // String prevYear = prevParts[2];
+              String prevIndoMonth = mapMonthToIndonesian(prevMonthShort);
+              String prevDisplayMonth = "$prevIndoMonth";
+
+              // Jika bulannya berbeda, trigger header
+              if (displayMonth != prevDisplayMonth) {
+                showHeader = true;
+              }
+            } else {
+              showHeader = true;
+            }
+          }
+        } else if (index == 0) {
+          // Fallback jika format berbeda
           if (provider.activeMonth.isNotEmpty) {
             String rawMonth = provider.activeMonth;
-            String displayMonth = rawMonth
+            displayMonth = rawMonth
                 .split(' ')
                 .map((word) {
                   if (word.isEmpty) return '';
@@ -336,30 +402,47 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                       word.substring(1).toLowerCase();
                 })
                 .join(' ');
-
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12.0, top: 4.0, left: 4.0),
-              child: Text(
-                displayMonth,
-                style: GoogleFonts.openSans(
-                  color: const Color(0xFF003366), // Warna biru tua BCA
-                  fontWeight: FontWeight.w800, // Tebal
-                  fontSize: 16,
-                ),
-              ),
-            );
+            showHeader = true;
           }
-          return const SizedBox.shrink();
         }
 
-        final tx = transactions[index - 1];
-        return TransactionTile(
+        Widget transactionTile = TransactionTile(
           dateOrStatus: tx.dateOrStatus,
           title: tx.title,
           subtitle: tx.subtitle,
           amount: tx.amount,
           isDebit: tx.isDebit,
         );
+
+        // Jika transaksi ini butuh header, bungkus dengan Column
+        if (showHeader && displayMonth.isNotEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: 12.0,
+                  top: index == 0
+                      ? 4.0
+                      : 20.0, // Jarak lebih besar jika berada di tengah list
+                  left: 4.0,
+                ),
+                child: Text(
+                  displayMonth,
+                  style: GoogleFonts.openSans(
+                    color: const Color(0xFF00529C), // Warna Biru khas BCA
+                    fontWeight: FontWeight.w800, // Font Bold
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              transactionTile,
+            ],
+          );
+        }
+
+        // Jika tidak ada perubahan bulan, langsung return tile transaksi biasa
+        return transactionTile;
       },
     );
   }
