@@ -174,9 +174,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
           children: [
             TextSpan(
               text: userName.toUpperCase(),
-              style: GoogleFonts.openSans(
-                fontWeight: FontWeight.w700,
-              ), // Sedikit dipertebal
+              style: GoogleFonts.openSans(fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -285,7 +283,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                             'IDR ',
                             style: GoogleFonts.openSans(
                               fontSize: 18 * scale,
-                              fontWeight: FontWeight.w800, // Dipertebal
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                           Text(
@@ -295,7 +293,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                             style: GoogleFonts.openSans(
                               fontSize: 18 * scale,
                               letterSpacing: isBalanceVisible ? 0 : 2 * scale,
-                              fontWeight: FontWeight.w800, // Dipertebal
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ],
@@ -401,8 +399,6 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
               'assets/images/TheNewGebyar.png',
               height: 48 * scale,
               width: 140 * scale,
-              // fit: BoxFit.contain,
-              // alignment: Alignment.centerLeft,
             ),
           ),
           Row(
@@ -456,7 +452,6 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                   style: GoogleFonts.openSans(
                     color: const Color(0xFF003D79),
                     fontSize: 18 * scale,
-                    // DI SINI PERUBAHANNYA: w900 (Black) agar bold banget
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -468,7 +463,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                       'Atur',
                       style: GoogleFonts.openSans(
                         color: bcaLightBlue,
-                        fontWeight: FontWeight.w700, // Ikut dipertebal sedikit
+                        fontWeight: FontWeight.w700,
                         fontSize: 14 * scale,
                       ),
                     ),
@@ -724,11 +719,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
         'label': 'Investasi',
         'isNew': false,
       },
-      {
-        'customIcon': buildLifestyleIcon(),
-        'label': 'Lifestyle',
-        'isNew': true,
-      },
+      {'customIcon': buildLifestyleIcon(), 'label': 'Lifestyle', 'isNew': true},
       {
         'customIcon': buildEStatementIcon(),
         'label': 'e-Statement',
@@ -926,59 +917,29 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
             vertical: 16.0 * scale,
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment:
+                MainAxisAlignment.center, // Ditengahkan karena berdiri sendiri
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(8 * scale),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE5F6FA),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.contactless_outlined,
-                      color: bcaBlue,
-                      size: 20 * scale,
-                    ),
-                  ),
-                  SizedBox(width: 8 * scale),
-                  Text(
-                    'NFC Pay',
-                    style: GoogleFonts.openSans(
-                      color: const Color(0xFF003D79),
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14 * scale,
-                    ), // Dipertebal
-                  ),
-                ],
+              Container(
+                padding: EdgeInsets.all(8 * scale),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE5F6FA),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.contactless_outlined,
+                  color: bcaBlue,
+                  size: 20 * scale,
+                ),
               ),
-              Row(
-                children: [
-                  Text(
-                    'QRIS',
-                    style: GoogleFonts.openSans(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w900,
-                      fontStyle: FontStyle.italic,
-                      fontSize: 14 * scale,
-                    ),
-                  ),
-                  Text(
-                    'tap',
-                    style: GoogleFonts.openSans(
-                      color: const Color(0xFF1CB5E0),
-                      fontSize: 10 * scale,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(width: 8 * scale),
-                  Icon(
-                    Icons.chevron_right,
-                    color: const Color(0xFF003D79),
-                    size: 24 * scale,
-                  ),
-                ],
+              SizedBox(width: 8 * scale),
+              Text(
+                'NFC Pay',
+                style: GoogleFonts.openSans(
+                  color: const Color(0xFF003D79),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14 * scale,
+                ),
               ),
             ],
           ),
@@ -1042,7 +1003,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
               ),
               _buildNavItem(Icons.star_border, 'For You'),
               _buildNavItem(
-                Icons.person_outline, 
+                Icons.person_outline,
                 'My Account',
                 onTap: () {
                   Navigator.push(
@@ -1064,7 +1025,12 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, {bool isSelected = false, VoidCallback? onTap}) {
+  Widget _buildNavItem(
+    IconData icon,
+    String label, {
+    bool isSelected = false,
+    VoidCallback? onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       child: Column(
@@ -1109,9 +1075,9 @@ class _BcaPromoCarouselState extends State<BcaPromoCarousel> {
   double scale = 1.0;
 
   final List<String> _promoItems = [
-    'Promo 1: Gebyar Hadiah',
-    'Promo 2: Diskon Lifestyle',
-    'Promo 3: Kemudahan Investasi',
+    'assets/images/gebyar_hadiah.jpeg',
+    'assets/images/diskon.jpeg',
+    'assets/images/investasi.jpg',
   ];
 
   @override
@@ -1168,7 +1134,6 @@ class _BcaPromoCarouselState extends State<BcaPromoCarousel> {
                   vertical: 8.0 * scale,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF002244),
                   borderRadius: BorderRadius.circular(16 * scale),
                   boxShadow: [
                     BoxShadow(
@@ -1177,16 +1142,9 @@ class _BcaPromoCarouselState extends State<BcaPromoCarousel> {
                       offset: Offset(0, 3 * scale),
                     ),
                   ],
-                ),
-                child: Center(
-                  child: Text(
-                    _promoItems[index],
-                    style: GoogleFonts.openSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontStyle: FontStyle.italic,
-                      fontSize: 14 * scale,
-                    ),
+                  image: DecorationImage(
+                    image: AssetImage(_promoItems[index]),
+                    fit: BoxFit.cover,
                   ),
                 ),
               );
