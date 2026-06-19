@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:reverse_engineering_bca/providers/transaction_provider.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     MultiProvider(
       providers: [
@@ -23,7 +24,7 @@ class MyBcaCloneApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'myBCA Clone',
+      title: 'myBCA',
       theme: ThemeData(
         textTheme: GoogleFonts.openSansTextTheme(Theme.of(context).textTheme),
         primaryColor: const Color(0xFF005BAC),

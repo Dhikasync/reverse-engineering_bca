@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'package:flutter/services.dart';
+import 'package:flutter/cupertino.dart';
 import '../providers/transaction_provider.dart';
 
 // --- IMPORT FILE HALAMAN BARU ---
@@ -753,8 +755,8 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                                   'IDR ',
                                   style: GoogleFonts.openSans(
                                     fontSize: 18,
-                                    fontWeight: FontWeight.w900,
-                                    color: const Color(0xFF333333),
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color.fromARGB(255, 54, 54, 54),
                                   ),
                                 ),
                                 Text(
@@ -763,9 +765,9 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                                       : '••••••••',
                                   style: GoogleFonts.openSans(
                                     fontSize: 18,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w700,
                                     letterSpacing: _isBalanceVisible ? 0 : 2.0,
-                                    color: const Color(0xFF333333),
+                                    color: const Color.fromARGB(255, 54, 54, 54),
                                   ),
                                 ),
                               ],
@@ -836,19 +838,30 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Expanded(
-                            child: Text(
-                              _formatAccountNumber(widget.accountNumber),
-                              style: GoogleFonts.openSans(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            _formatAccountNumber(widget.accountNumber),
+                            style: GoogleFonts.openSans(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Icon(Icons.copy, color: Colors.white, size: 14),
+                          GestureDetector(
+                            onTap: () async {
+                              await Clipboard.setData(
+                                ClipboardData(text: widget.accountNumber),
+                              );
+                            },
+                            child: Transform.scale(
+                              scaleX: -1,
+                              child: const Icon(
+                                CupertinoIcons.square_on_square,
+                                color: Colors.white70,
+                                size: 14,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],

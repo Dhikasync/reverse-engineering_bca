@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
 import 'package:reverse_engineering_bca/account/accountinformation.dart';
 import 'package:reverse_engineering_bca/settings/settings_page.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class MyBcaHomeScreen extends StatefulWidget {
   const MyBcaHomeScreen({super.key});
@@ -146,8 +149,22 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                 },
               ),
               IconButton(
-                icon: Icon(Icons.logout, color: Colors.white, size: 24 * scale),
-                onPressed: () {},
+                icon: SvgPicture.string(
+                  '''<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 511.989 511.989" style="enable-background:new 0 0 511.989 511.989;" xml:space="preserve" stroke="#000000" stroke-width="20" stroke-linejoin="round">
+                      <g><g><g>
+                        <path d="M111.855,2.304L31.172,34.586C8.448,43,0,54.418,0,76.715v358.477c0,22.298,8.448,33.715,30.959,42.061l81.058,32.427 c4.011,1.519,8.038,2.287,11.981,2.287c17.152,0,29.602-14.336,29.602-34.091V34.049C153.6,9.78,134.246-6.126,111.855,2.304z M136.533,477.876c0,10.18-5.035,17.024-12.535,17.024c-1.869,0-3.883-0.401-5.803-1.118L37.103,461.33 c-16.102-5.965-20.036-11.102-20.036-26.138V76.715c0-15.036,3.934-20.164,20.241-26.206l80.725-32.29 c2.082-0.785,4.087-1.186,5.956-1.186c7.501,0,12.544,6.835,12.544,17.016V477.876z"/>
+                        <path d="M178.133,51.115h120.533c14.114,0,25.6,11.486,25.6,25.6v128c0,4.71,3.814,8.533,8.533,8.533 c4.719,0,8.533-3.823,8.533-8.533v-128c0-23.526-19.14-42.667-42.667-42.667H178.133c-4.71,0-8.533,3.823-8.533,8.533 S173.423,51.115,178.133,51.115z"/>
+                        <path d="M332.8,298.582c-4.719,0-8.533,3.823-8.533,8.533v128c0,14.114-11.486,25.6-25.6,25.6H179.2 c-4.71,0-8.533,3.823-8.533,8.533s3.823,8.533,8.533,8.533h119.467c23.526,0,42.667-19.14,42.667-42.667v-128 C341.333,302.405,337.519,298.582,332.8,298.582z"/>
+                        <path d="M511.343,252.655c-0.435-1.05-1.058-1.988-1.852-2.782l-85.325-85.333c-3.337-3.336-8.73-3.336-12.066,0 c-3.337,3.337-3.337,8.73,0,12.066l70.767,70.775H325.000c-4.71,0-8.533,3.823-8.533,8.533c0,4.71,3.823,8.533,8.533,8.533 h157.868L412.1,335.215c-3.337,3.337-3.337,8.73,0,12.066c1.664,1.664,3.849,2.5,6.033,2.5c2.185,0,4.369-0.836,6.033-2.5 l85.325-85.325c0.794-0.794,1.417-1.732,1.852-2.782C512.205,257.093,512.205,254.738,511.343,252.655z"/>
+                      </g></g></g>
+                    </svg>''',
+                  width: 22 * scale, 
+                  height: 22 * scale,
+                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                ),
+                onPressed: () {
+                  // Aksi ketika tombol logout ditekan
+                },
               ),
             ],
           ),
@@ -240,7 +257,8 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                           'BCA ID >',
                           style: GoogleFonts.openSans(
                             color: Colors.white,
-                            fontSize: 10 * scale,
+                            fontSize: 12 * scale,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -253,12 +271,28 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                         'Account: ${_formatAccountNumber(accountNumber)}',
                         style: GoogleFonts.openSans(
                           color: Colors.white,
-                          fontSize: 13 * scale,
+                          fontSize: 15 * scale,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       SizedBox(width: 8 * scale),
-                      Icon(Icons.copy, color: Colors.white70, size: 14 * scale),
+                      GestureDetector(
+                        onTap: () async {
+                          // Menyalin nomor rekening secara senyap
+                          await Clipboard.setData(
+                            ClipboardData(text: accountNumber),
+                          );
+                        },
+                        child: Transform.scale(
+                          scaleX:
+                              -1, // <--- Ini yang berfungsi me-mirror icon secara horizontal
+                          child: Icon(
+                            CupertinoIcons.square_on_square,
+                            color: Colors.white70,
+                            size: 16 * scale,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -286,7 +320,8 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                             'IDR ',
                             style: GoogleFonts.openSans(
                               fontSize: 18 * scale,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
+                              color: const Color.fromARGB(255, 54, 54, 54),
                             ),
                           ),
                           Text(
@@ -296,7 +331,8 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                             style: GoogleFonts.openSans(
                               fontSize: 18 * scale,
                               letterSpacing: isBalanceVisible ? 0 : 2 * scale,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
+                              color: const Color.fromARGB(255, 54, 54, 54),
                             ),
                           ),
                         ],
@@ -757,19 +793,32 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
               alignment: Alignment.bottomCenter,
               clipBehavior: Clip.none,
               children: [
-                Container(
-                  width: 60 * scale,
-                  height: 60 * scale,
-                  alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE5F6FA),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      bottom: item['isNew'] ? 6.0 * scale : 0.0,
+                Transform.rotate(
+                  angle: 0.785398, // 45 degrees
+                  child: Container(
+                    width: 52 * scale,
+                    height: 52 * scale,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE5F6FA),
+                      borderRadius: BorderRadius.circular(12 * scale),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.07),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    child: item['customIcon'],
+                    child: Transform.rotate(
+                      angle: -0.785398, // counter-rotate icon back to upright
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          bottom: item['isNew'] ? 6.0 * scale : 0.0,
+                        ),
+                        child: item['customIcon'],
+                      ),
+                    ),
                   ),
                 ),
                 if (item['isNew'])
@@ -796,14 +845,14 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                   ),
               ],
             ),
-            SizedBox(height: 10 * scale),
+            SizedBox(height: 14 * scale),
             Text(
               item['label'],
               textAlign: TextAlign.center,
-              style: GoogleFonts.openSans(
-                fontSize: 11 * scale,
+              style: GoogleFonts.roboto(
+                fontSize: 13 * scale,
                 color: Colors.black87,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
               ),
               maxLines: 2,
             ),
@@ -846,7 +895,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                           .map((item) => buildItem(item))
                           .toList(),
                     ),
-                    SizedBox(height: 16 * scale),
+                    SizedBox(height: 28 * scale),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: menuItems
@@ -921,32 +970,41 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10 * scale,
-              offset: Offset(0, 4 * scale),
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 16 * scale,
+              spreadRadius: 1 * scale,
+              offset: Offset(0, 6 * scale),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 6 * scale,
+              offset: Offset(0, 2 * scale),
             ),
           ],
         ),
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: 24.0 * scale,
-            vertical: 16.0 * scale,
+            horizontal: 20.0 * scale,
+            vertical: 6.0 * scale,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: EdgeInsets.all(8 * scale),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE5F6FA),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.contactless_outlined,
+                  ClipOval(
+                    child: Container(
+                      width: 44 * scale,
+                      height: 44 * scale,
                       color: bcaBlue,
-                      size: 20 * scale,
+                      child: Center(
+                        child: SvgPicture.string(
+                          '''<svg id="Capa_1" enable-background="new 0 0 512 512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><g><path d="m291.88 507.606c-5.858-5.858-5.858-15.355 0-21.213 127.039-127.039 127.039-333.747 0-460.786-5.858-5.858-5.858-15.355 0-21.213s15.355-5.858 21.213 0c33.962 33.962 60.26 73.568 78.163 117.717 17.289 42.635 26.056 87.682 26.056 133.89 0 46.207-8.767 91.254-26.056 133.89-17.903 44.149-44.201 83.755-78.163 117.717-5.857 5.856-15.355 5.856-21.213-.002z"/><path d="m227.614 443.34c-5.858-5.858-5.858-15.355 0-21.213 91.602-91.602 91.602-240.651 0-332.253-5.858-5.858-5.858-15.355 0-21.213s15.355-5.858 21.213 0c50.04 50.04 77.598 116.572 77.599 187.34 0 70.768-27.559 137.3-77.599 187.34-5.858 5.856-15.355 5.856-21.213-.001z"/><path d="m163.347 379.073c-5.858-5.858-5.858-15.355 0-21.213 56.166-56.166 56.166-147.554 0-203.72-5.858-5.858-5.858-15.355 0-21.213s15.355-5.858 21.213 0c67.863 67.863 67.863 178.283 0 246.146-5.857 5.858-15.355 5.858-21.213 0z"/><path d="m99.08 314.806c-5.858-5.858-5.858-15.355 0-21.213 20.729-20.729 20.729-54.458 0-75.187-5.858-5.858-5.858-15.355 0-21.213s15.355-5.858 21.213 0c32.426 32.426 32.426 85.187 0 117.613-5.857 5.858-15.355 5.858-21.213 0z"/></g></svg>''',
+                          width: 26 * scale,
+                          height: 26 * scale,
+                          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                        ),
+                      ),
                     ),
                   ),
                   SizedBox(width: 8 * scale),
@@ -963,16 +1021,14 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
               Row(
                 children: [
                   Image.asset(
-                    'assets/images/qris.png', // Logo QRIS dikembalikan menggunakan file barumu
-                    height:
-                        60 *
-                        scale, // Tinggi di-set 20 agar seimbang proporsinya dengan ikon NFC Pay
+                    'assets/images/qris.png',
+                    height: 72 * scale,
                   ),
                   SizedBox(width: 8 * scale),
                   Icon(
                     Icons.chevron_right,
                     color: const Color(0xFF003D79),
-                    size: 24 * scale,
+                    size: 36 * scale,
                   ),
                 ],
               ),
@@ -1089,17 +1145,24 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                       child: _buildNavItem(
                         Icons.person_outline,
                         'My Account',
-                        onTap: () {
-                          Navigator.push(
+                        onTap: () async {
+                          final result = await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => SettingsPage(
-                                initialName: 'GUSTI FARHAN MUTTAQIN',
+                                initialName: userName,
                                 initialAccountNumber: accountNumber,
                                 initialBalance: balance,
                               ),
                             ),
                           );
+                          if (result != null && result is Map) {
+                            setState(() {
+                              userName = result['name'];
+                              accountNumber = result['accountNumber'];
+                              balance = result['balance'];
+                            });
+                          }
                         },
                       ),
                     ),

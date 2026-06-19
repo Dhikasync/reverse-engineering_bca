@@ -8,7 +8,6 @@ class TransactionProvider with ChangeNotifier {
   String _activeMonth = "";
   String _activeYear = "";
 
-  final List<String> _uploadedMonths = [];
   double _startingBalance = 734147.95;
 
   String _branch = "KCP PERAK";
@@ -20,18 +19,111 @@ class TransactionProvider with ChangeNotifier {
     "INDONESIA",
   ];
 
-  List<TransactionModel> get transactions => _transactions;
+  // Always returns transactions sorted newest-first, regardless of internal order
+  List<TransactionModel> get transactions {
+    final sorted = List<TransactionModel>.from(_transactions);
+    sorted.sort((a, b) {
+      return _parseTransactionDate(b).compareTo(_parseTransactionDate(a));
+    });
+    return sorted;
+  }
   String get activeMonth => _activeMonth;
   String get activeYear => _activeYear;
   double get startingBalance => _startingBalance;
   String get branch => _branch;
   List<String> get address => _address;
 
+  // Helper: Indonesian month name to number (for sorting)
+  static const Map<String, int> _monthOrder = {
+    'Januari': 1,
+    'Februari': 2,
+    'Maret': 3,
+    'April': 4,
+    'Mei': 5,
+    'Juni': 6,
+    'Juli': 7,
+    'Agustus': 8,
+    'September': 9,
+    'Oktober': 10,
+    'November': 11,
+    'Desember': 12,
+  };
+
+  // Helper: English month abbreviation to number (for sorting transactions)
+  static const Map<String, int> _engMonthOrder = {
+    'jan': 1,
+    'feb': 2,
+    'mar': 3,
+    'apr': 4,
+    'may': 5,
+    'mei': 5,
+    'jun': 6,
+    'jul': 7,
+    'aug': 8,
+    'agu': 8,
+    'sep': 9,
+    'oct': 10,
+    'okt': 10,
+    'nov': 11,
+    'dec': 12,
+    'des': 12,
+  };
+
+  /// Parse transaction date into a comparable DateTime.
+  /// Format: "15\nAUG\n2023"
+  DateTime _parseTransactionDate(TransactionModel tx) {
+    final parts = tx.dateOrStatus.split('\n');
+    if (parts.length >= 3) {
+      final day = int.tryParse(parts[0]) ?? 1;
+      final month = _engMonthOrder[parts[1].toLowerCase()] ?? 1;
+      final year = int.tryParse(parts[2]) ?? 2000;
+      return DateTime(year, month, day);
+    }
+    return DateTime(2000);
+  }
+
+  /// Sort transactions newest first (descending by date).
+  void _sortTransactions() {
+    _transactions.sort((a, b) {
+      return _parseTransactionDate(b).compareTo(_parseTransactionDate(a));
+    });
+  }
+
+  // Computed getter: always derived from actual transactions, deduplicated & sorted newest first
   List<String> get uploadedMonths {
-    if (_uploadedMonths.isEmpty) {
+    if (_transactions.isEmpty) {
       return ["Agustus 2023", "Juli 2023", "Juni 2023"];
     }
-    return _uploadedMonths;
+
+    // Collect unique periods directly from current transactions
+    final Set<String> periodsSet = {};
+    for (var tx in _transactions) {
+      final parts = tx.dateOrStatus.split('\n');
+      if (parts.length >= 3) {
+        String monthShort = parts[1];
+        String year = parts[2];
+        String indoMonth = _mapMonthToIndonesian(monthShort);
+        periodsSet.add("$indoMonth $year");
+      }
+    }
+
+    // Sort by year desc, then month desc (newest first)
+    final List<String> periods = periodsSet.toList();
+    periods.sort((a, b) {
+      final partsA = a.split(' ');
+      final partsB = b.split(' ');
+      if (partsA.length < 2 || partsB.length < 2) return 0;
+
+      final yearA = int.tryParse(partsA.last) ?? 0;
+      final yearB = int.tryParse(partsB.last) ?? 0;
+      if (yearA != yearB) return yearB.compareTo(yearA);
+
+      final monthA = _monthOrder[partsA.first] ?? 0;
+      final monthB = _monthOrder[partsB.first] ?? 0;
+      return monthB.compareTo(monthA);
+    });
+
+    return periods;
   }
 
   // Fungsi Helper menerjemahkan bulan ke Bahasa Indonesia
@@ -66,33 +158,11 @@ class TransactionProvider with ChangeNotifier {
     }
   }
 
-  // Mengekstrak bulan-bulan unik dari List transaksi
-  void _updateUploadedMonthsFromTransactions() {
-    Set<String> detectedPeriods = {};
-    for (var tx in _transactions) {
-      final parts = tx.dateOrStatus.split('\n');
-      if (parts.length >= 3) {
-        String monthShort = parts[1];
-        String year = parts[2];
-        String indoMonth = _mapMonthToIndonesian(monthShort);
-        detectedPeriods.add("$indoMonth $year");
-      }
-    }
-
-    // Menambahkannya ke daftar periode bulan
-    for (var period in detectedPeriods) {
-      if (!_uploadedMonths.contains(period)) {
-        _uploadedMonths.insert(0, period);
-      }
-    }
-  }
-
   void processNewPdfTransactions(
     List<TransactionModel> newTransactions,
     String pdfMonth,
     String pdfYear,
   ) {
-    // Digabung jika upload PDF ke-2, agar tidak mereset data.
     _activeMonth = pdfMonth;
     _activeYear = pdfYear;
     _transactions.addAll(newTransactions);
@@ -110,7 +180,7 @@ class TransactionProvider with ChangeNotifier {
       _address = List.from(PdfParserService.detectedAddress);
     }
 
-    _updateUploadedMonthsFromTransactions();
+    _sortTransactions(); // Urutkan setelah setiap upload
     notifyListeners();
   }
 
@@ -125,18 +195,20 @@ class TransactionProvider with ChangeNotifier {
       _address = List.from(PdfParserService.detectedAddress);
     }
 
-    _updateUploadedMonthsFromTransactions();
+    _sortTransactions(); // Urutkan setelah set
     notifyListeners();
   }
 
   void addTransaction(TransactionModel transaction) {
     _transactions.add(transaction);
+    _sortTransactions(); // Urutkan setelah tambah
     notifyListeners();
   }
 
   void updateTransaction(int index, TransactionModel updatedTransaction) {
     if (index >= 0 && index < _transactions.length) {
       _transactions[index] = updatedTransaction;
+      _sortTransactions(); // Urutkan ulang setelah edit (mencegah duplikat header & urutan salah)
       notifyListeners();
     }
   }
@@ -155,7 +227,6 @@ class TransactionProvider with ChangeNotifier {
     PdfParserService.detectedMonth = "";
     PdfParserService.detectedYear = "";
 
-    //bila tidak upload pdf ini secara default
     _branch = "KCP PERAK";
     _address = [
       "ASEMROWO",
