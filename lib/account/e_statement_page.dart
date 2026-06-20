@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:share_plus/share_plus.dart';
+// Import viewer page yang baru dibuat (sesuaikan path-nya jika berbeda)
+import 'package:reverse_engineering_bca/account/e_statement_viewer_page.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:path_provider/path_provider.dart';
 import '../providers/transaction_provider.dart';
@@ -75,6 +76,45 @@ class _EStatementPageState extends State<EStatementPage> {
     return dateOrStatus;
   }
 
+  // Helper untuk mengubah string bulan (ex: "Juni 2026") menjadi DateTime
+  DateTime _parsePeriodToDate(String period) {
+    final parts = period.split(' ');
+    if (parts.isEmpty) return DateTime.now();
+
+    String monthStr = parts[0].toLowerCase();
+    int year = parts.length > 1
+        ? (int.tryParse(parts[1]) ?? DateTime.now().year)
+        : DateTime.now().year;
+
+    int month = 1;
+    if (monthStr.contains('jan'))
+      month = 1;
+    else if (monthStr.contains('feb'))
+      month = 2;
+    else if (monthStr.contains('mar'))
+      month = 3;
+    else if (monthStr.contains('apr'))
+      month = 4;
+    else if (monthStr.contains('mei') || monthStr.contains('may'))
+      month = 5;
+    else if (monthStr.contains('jun'))
+      month = 6;
+    else if (monthStr.contains('jul'))
+      month = 7;
+    else if (monthStr.contains('agu') || monthStr.contains('aug'))
+      month = 8;
+    else if (monthStr.contains('sep'))
+      month = 9;
+    else if (monthStr.contains('okt') || monthStr.contains('oct'))
+      month = 10;
+    else if (monthStr.contains('nov'))
+      month = 11;
+    else if (monthStr.contains('des') || monthStr.contains('dec'))
+      month = 12;
+
+    return DateTime(year, month);
+  }
+
   void _drawRoundedRect(
     PdfGraphics graphics,
     PdfPen pen,
@@ -125,7 +165,11 @@ class _EStatementPageState extends State<EStatementPage> {
 
     final PdfFont fontTitle = fontData != null
         ? PdfTrueTypeFont(fontData, 11, style: PdfFontStyle.bold)
-        : PdfStandardFont(PdfFontFamily.helvetica, 11, style: PdfFontStyle.bold);
+        : PdfStandardFont(
+            PdfFontFamily.helvetica,
+            11,
+            style: PdfFontStyle.bold,
+          );
     final PdfFont fontBold = fontData != null
         ? PdfTrueTypeFont(fontData, 7, style: PdfFontStyle.bold)
         : PdfStandardFont(PdfFontFamily.helvetica, 7, style: PdfFontStyle.bold);
@@ -133,17 +177,26 @@ class _EStatementPageState extends State<EStatementPage> {
     final PdfFont fontCatatanTitle = fontData != null
         ? PdfTrueTypeFont(fontData, 6, style: PdfFontStyle.bold)
         : PdfStandardFont(PdfFontFamily.helvetica, 6, style: PdfFontStyle.bold);
-        
+
     final PdfFont fontCatatanBody = fontData != null
         ? PdfTrueTypeFont(fontData, 6, style: PdfFontStyle.regular)
-        : PdfStandardFont(PdfFontFamily.helvetica, 6, style: PdfFontStyle.regular);
+        : PdfStandardFont(
+            PdfFontFamily.helvetica,
+            6,
+            style: PdfFontStyle.regular,
+          );
 
     final PdfPen linePen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
 
     final PdfPen textBoldPen = PdfPen(PdfColor(0, 0, 0), width: 0.6);
     final PdfBrush textBoldBrush = PdfBrushes.black;
 
-    void drawBoldString(String text, PdfFont font, Rect bounds, {PdfStringFormat? format}) {
+    void drawBoldString(
+      String text,
+      PdfFont font,
+      Rect bounds, {
+      PdfStringFormat? format,
+    }) {
       graphics.drawString(
         text,
         font,
@@ -313,9 +366,7 @@ class _EStatementPageState extends State<EStatementPage> {
       characterSpacing: 0.5,
     );
 
-    final PdfStringFormat bulletFormat = PdfStringFormat(
-      characterSpacing: 0.5,
-    );
+    final PdfStringFormat bulletFormat = PdfStringFormat(characterSpacing: 0.5);
 
     graphics.drawString(
       '•',
@@ -437,9 +488,6 @@ class _EStatementPageState extends State<EStatementPage> {
     String targetYear = periodParts.length > 1 ? periodParts[1] : '';
     String targetShortMonth = getShortMonth(targetMonthIndo);
 
-    // =========================================================================
-    // PERBAIKAN: Fungsi Helper untuk Parse Tanggal & Mengurutkan Transaksi
-    // =========================================================================
     DateTime parseDate(String dateOrStatus) {
       final parts = dateOrStatus.split('\n');
       if (parts.length >= 3) {
@@ -487,19 +535,16 @@ class _EStatementPageState extends State<EStatementPage> {
       DateTime lastDate = parseDate(
         chronologicalTransactions.last.dateOrStatus,
       );
-      // Jika data paling atas tanggalnya lebih baru dari data bawah (Newest-First), balikkan!
       if (firstDate.isAfter(lastDate)) {
         chronologicalTransactions = chronologicalTransactions.reversed.toList();
       }
     }
-    // =========================================================================
 
     double runningBalance = provider.startingBalance;
     List<TransactionModel> targetTransactions = [];
     double startingBalanceForMonth = runningBalance;
     bool foundTargetMonth = false;
 
-    // Loop menggunakan data yang SUDAH PASTI URUT dari yang terlama (Oldest-First)
     for (var tx in chronologicalTransactions) {
       final parts = tx.dateOrStatus.split('\n');
       if (parts.length >= 3) {
@@ -539,7 +584,9 @@ class _EStatementPageState extends State<EStatementPage> {
 
       List<int>? fontData;
       try {
-        final ByteData bd = await rootBundle.load('assets/fonts/UntitleddTTF.ttf');
+        final ByteData bd = await rootBundle.load(
+          'assets/fonts/UntitleddTTF.ttf',
+        );
         fontData = bd.buffer.asUint8List();
       } catch (e) {
         debugPrint('Font tidak ditemukan: $e');
@@ -846,15 +893,27 @@ class _EStatementPageState extends State<EStatementPage> {
       await file.writeAsBytes(savedBytes);
 
       if (!mounted) return;
-      // ignore: deprecated_member_use
-      await Share.shareXFiles([
-        XFile(filePath),
-      ], text: 'Laporan Mutasi Rekening ${widget.accountNumber}');
+
+      // =======================================================================
+      // ALUR NAVIGASI KE VIEWER PAGE (Menggantikan Share System Bawaan)
+      // =======================================================================
+      DateTime statementDate = _parsePeriodToDate(selectedPeriod);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EStatementViewerPage(
+            pdfPath: filePath,
+            accountNumber: widget.accountNumber,
+            statementDate: statementDate,
+          ),
+        ),
+      );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to export PDF: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load PDF viewer: $e')),
+        );
       }
     }
   }
@@ -1037,7 +1096,6 @@ class _EStatementPageState extends State<EStatementPage> {
                                 monthStr,
                               );
 
-                              // PERBAIKAN: Menggunakan Material alih-alih Container(decoration: ...)
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: Material(
@@ -1049,8 +1107,7 @@ class _EStatementPageState extends State<EStatementPage> {
                                       width: 1,
                                     ),
                                   ),
-                                  clipBehavior: Clip
-                                      .antiAlias, // Memotong efek ripple agar melengkung di sudut
+                                  clipBehavior: Clip.antiAlias,
                                   child: ListTile(
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 20,
@@ -1078,7 +1135,6 @@ class _EStatementPageState extends State<EStatementPage> {
                                 ),
                               );
                             } else {
-                              // PERBAIKAN: Menggunakan Material alih-alih Container(decoration: ...)
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: Material(
