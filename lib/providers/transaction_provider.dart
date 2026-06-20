@@ -10,14 +10,9 @@ class TransactionProvider with ChangeNotifier {
 
   double _startingBalance = 734147.95;
 
-  String _branch = "KCP PERAK";
-  List<String> _address = [
-    "TANDES",
-    "RT005 RW006 JAWA TIMUR",
-    "GADEL TENGAH II NO 05",
-    "SURABAYA 60186",
-    "INDONESIA",
-  ];
+  String _branch = '';
+  String _accountType = 'REKENING TAHAPAN';
+  List<String> _address = [];
 
   // Always returns transactions sorted newest-first, regardless of internal order
   List<TransactionModel> get transactions {
@@ -31,6 +26,7 @@ class TransactionProvider with ChangeNotifier {
   String get activeYear => _activeYear;
   double get startingBalance => _startingBalance;
   String get branch => _branch;
+  String get accountType => _accountType;
   List<String> get address => _address;
 
   // Helper: Indonesian month name to number (for sorting)
@@ -179,6 +175,9 @@ class TransactionProvider with ChangeNotifier {
     if (PdfParserService.detectedAddress.isNotEmpty) {
       _address = List.from(PdfParserService.detectedAddress);
     }
+    if (PdfParserService.detectedAccountType.isNotEmpty) {
+      _accountType = PdfParserService.detectedAccountType;
+    }
 
     _sortTransactions(); // Urutkan setelah setiap upload
     notifyListeners();
@@ -194,8 +193,22 @@ class TransactionProvider with ChangeNotifier {
     if (PdfParserService.detectedAddress.isNotEmpty) {
       _address = List.from(PdfParserService.detectedAddress);
     }
+    if (PdfParserService.detectedAccountType.isNotEmpty) {
+      _accountType = PdfParserService.detectedAccountType;
+    }
 
     _sortTransactions(); // Urutkan setelah set
+    notifyListeners();
+  }
+
+  void setBranchAndAddress(String branch, List<String> address) {
+    _branch = branch.toUpperCase();
+    _address = address.map((l) => l.toUpperCase()).toList();
+    notifyListeners();
+  }
+
+  void setAccountType(String accountType) {
+    _accountType = accountType.toUpperCase();
     notifyListeners();
   }
 
@@ -222,19 +235,11 @@ class TransactionProvider with ChangeNotifier {
 
   void clearTransactions() {
     _transactions.clear();
-    _activeMonth = "";
-    _activeYear = "";
-    PdfParserService.detectedMonth = "";
-    PdfParserService.detectedYear = "";
-
-    _branch = "KCP PERAK";
-    _address = [
-      "ASEMROWO",
-      "RT005 RW006 JAWA TIMUR",
-      "MANGGA 2",
-      "SURABAYA 60187",
-      "INDONESIA",
-    ];
+    _activeMonth = '';
+    _activeYear = '';
+    PdfParserService.detectedMonth = '';
+    PdfParserService.detectedYear = '';
+    // Do NOT reset branch/address — user set those manually
     notifyListeners();
   }
 }

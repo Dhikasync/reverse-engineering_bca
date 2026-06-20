@@ -94,111 +94,108 @@ class _AccountInformationPageState extends State<AccountInformationPage>
             bottom: false,
             child: NestedScrollView(
               controller: _scrollController,
-              headerSliverBuilder:
-                  (BuildContext context, bool innerBoxIsScrolled) {
-                    Color appBarColor =
-                        (innerBoxIsScrolled || scrollProgress == 1.0)
-                        ? const Color(0xFF004D8E)
-                        : Color.lerp(
-                            Colors.transparent,
-                            const Color(0xFF004D8E),
-                            scrollProgress,
-                          )!;
+              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+                Color appBarColor =
+                    (innerBoxIsScrolled || scrollProgress == 1.0)
+                    ? const Color(0xFF004D8E)
+                    : Color.lerp(
+                        Colors.transparent,
+                        const Color(0xFF004D8E),
+                        scrollProgress,
+                      )!;
 
-                    return <Widget>[
-                      // App Bar
-                      SliverAppBar(
-                        backgroundColor: appBarColor,
-                        elevation: 0.0,
-                        pinned: true,
-                        centerTitle: false,
-                        leading: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        title: Text(
-                          'Account Information',
-                          style: GoogleFonts.openSans(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                return <Widget>[
+                  // App Bar
+                  SliverAppBar(
+                    backgroundColor: appBarColor,
+                    elevation: 0.0,
+                    pinned: true,
+                    centerTitle: false,
+                    leading: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
                       ),
-
-                      // Account Info Card
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: _AccountCardDelegate(
-                          accountNumber: widget.accountNumber,
-                          balance: widget.balance,
-                          isBalanceVisible: widget.isBalanceVisible,
-                          innerBoxIsScrolled: innerBoxIsScrolled,
-                        ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    title: Text(
+                      'Account Information',
+                      style: GoogleFonts.openSans(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
                       ),
+                    ),
+                  ),
 
-                      // Tab Bar
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: _StickyTabBarDelegate(
-                          child: Container(
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: Color(0xFFEEEEEE),
-                                  width: 1,
-                                ),
-                              ),
-                            ),
-                            child: TabBar(
-                              controller: _tabController,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12.0,
-                              ),
-                              indicatorSize: TabBarIndicatorSize.tab,
-                              labelPadding: const EdgeInsets.symmetric(
-                                horizontal: 2.0,
-                              ),
-                              labelColor: const Color(0xFF00529C),
-                              unselectedLabelColor: Colors.grey.shade500,
-                              indicatorColor: const Color(0xFF00529C),
-                              indicatorWeight: 3,
-                              labelStyle: GoogleFonts.openSans(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                              unselectedLabelStyle: GoogleFonts.openSans(
-                                fontWeight: FontWeight.normal,
-                                fontSize: 12,
-                              ),
-                              tabs: const [
-                                Tab(
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text('Account Transactions'),
-                                  ),
-                                ),
-                                Tab(text: 'Card'),
-                                Tab(text: 'Pocket'),
-                              ],
+                  // Account Info Card
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _AccountCardDelegate(
+                      accountNumber: widget.accountNumber,
+                      balance: widget.balance,
+                      isBalanceVisible: widget.isBalanceVisible,
+                      innerBoxIsScrolled: innerBoxIsScrolled,
+                    ),
+                  ),
+
+                  // Tab Bar
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _StickyTabBarDelegate(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Color(0xFFEEEEEE),
+                              width: 1,
                             ),
                           ),
                         ),
-                      ),
-
-                      // Search, Export & Filter Bar (Pinned to stay sticky below TabBar)
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: _SearchFilterDelegate(
-                          child: _buildSearchAndFilter(),
+                        child: TabBar(
+                          controller: _tabController,
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          labelPadding: const EdgeInsets.symmetric(
+                            horizontal: 2.0,
+                          ),
+                          labelColor: const Color(0xFF00529C),
+                          unselectedLabelColor: Colors.grey.shade500,
+                          indicatorColor: const Color(0xFF00529C),
+                          indicatorWeight: 3,
+                          labelStyle: GoogleFonts.openSans(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                          unselectedLabelStyle: GoogleFonts.openSans(
+                            fontWeight: FontWeight.normal,
+                            fontSize: 12,
+                          ),
+                          tabs: const [
+                            Tab(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text('Account Transactions'),
+                              ),
+                            ),
+                            Tab(text: 'Card'),
+                            Tab(text: 'Pocket'),
+                          ],
                         ),
                       ),
-                    ];
-                  },
+                    ),
+                  ),
+
+                  // Search, Export & Filter Bar (Pinned to stay sticky below TabBar)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SearchFilterDelegate(
+                      child: _buildSearchAndFilter(),
+                    ),
+                  ),
+                ];
+              },
               body: Container(
                 color: Colors.white,
                 child: TabBarView(
@@ -273,12 +270,15 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => EStatementPage(
-                      userName: widget.userName,
-                      accountNumber: widget.accountNumber,
-                      balance: widget.balance,
-                      accountTypeDetail: '',
-                    ),
+                    builder: (context) {
+                      final provider = Provider.of<TransactionProvider>(context, listen: false);
+                      return EStatementPage(
+                        userName: widget.userName,
+                        accountNumber: widget.accountNumber,
+                        balance: widget.balance,
+                        accountTypeDetail: provider.accountType,
+                      );
+                    },
                   ),
                 );
               },
@@ -491,10 +491,7 @@ class _SearchFilterDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(
-      color: Colors.white,
-      child: child,
-    );
+    return Container(color: Colors.white, child: child);
   }
 
   @override
@@ -757,7 +754,12 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                                   style: GoogleFonts.openSans(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
-                                    color: const Color.fromARGB(255, 54, 54, 54),
+                                    color: const Color.fromARGB(
+                                      255,
+                                      54,
+                                      54,
+                                      54,
+                                    ),
                                   ),
                                 ),
                                 Text(
@@ -768,7 +770,12 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: _isBalanceVisible ? 0 : 2.0,
-                                    color: const Color.fromARGB(255, 54, 54, 54),
+                                    color: const Color.fromARGB(
+                                      255,
+                                      54,
+                                      54,
+                                      54,
+                                    ),
                                   ),
                                 ),
                               ],

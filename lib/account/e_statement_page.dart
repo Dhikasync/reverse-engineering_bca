@@ -119,32 +119,40 @@ class _EStatementPageState extends State<EStatementPage> {
     String periodStr,
     PdfBitmap? logo,
     TransactionProvider provider,
+    List<int>? fontData,
   ) {
     final PdfGraphics graphics = page.graphics;
 
-    final PdfFont fontTitle = PdfStandardFont(
-      PdfFontFamily.helvetica,
-      11,
-      style: PdfFontStyle.bold,
-    );
-    final PdfFont fontBold = PdfStandardFont(
-      PdfFontFamily.helvetica,
-      7,
-      style: PdfFontStyle.bold,
-    );
+    final PdfFont fontTitle = fontData != null
+        ? PdfTrueTypeFont(fontData, 11, style: PdfFontStyle.bold)
+        : PdfStandardFont(PdfFontFamily.helvetica, 11, style: PdfFontStyle.bold);
+    final PdfFont fontBold = fontData != null
+        ? PdfTrueTypeFont(fontData, 7, style: PdfFontStyle.bold)
+        : PdfStandardFont(PdfFontFamily.helvetica, 7, style: PdfFontStyle.bold);
 
-    final PdfFont fontCatatanTitle = PdfStandardFont(
-      PdfFontFamily.helvetica,
-      7,
-      style: PdfFontStyle.bold,
-    );
-    final PdfFont fontSmallItalic = PdfStandardFont(
-      PdfFontFamily.helvetica,
-      7,
-      style: PdfFontStyle.italic,
-    );
+    final PdfFont fontCatatanTitle = fontData != null
+        ? PdfTrueTypeFont(fontData, 6, style: PdfFontStyle.bold)
+        : PdfStandardFont(PdfFontFamily.helvetica, 6, style: PdfFontStyle.bold);
+        
+    final PdfFont fontCatatanBody = fontData != null
+        ? PdfTrueTypeFont(fontData, 6, style: PdfFontStyle.regular)
+        : PdfStandardFont(PdfFontFamily.helvetica, 6, style: PdfFontStyle.regular);
 
     final PdfPen linePen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
+
+    final PdfPen textBoldPen = PdfPen(PdfColor(0, 0, 0), width: 0.6);
+    final PdfBrush textBoldBrush = PdfBrushes.black;
+
+    void drawBoldString(String text, PdfFont font, Rect bounds, {PdfStringFormat? format}) {
+      graphics.drawString(
+        text,
+        font,
+        pen: textBoldPen,
+        brush: textBoldBrush,
+        bounds: bounds,
+        format: format ?? PdfStringFormat(characterSpacing: 0.5),
+      );
+    }
 
     if (logo != null) {
       graphics.drawImage(logo, const Rect.fromLTWH(25.0, 20.0, 75.0, 25.0));
@@ -161,17 +169,17 @@ class _EStatementPageState extends State<EStatementPage> {
       );
     }
 
-    graphics.drawString(
+    drawBoldString(
       widget.accountTypeDetail.toUpperCase(),
       fontTitle,
-      bounds: const Rect.fromLTWH(0.0, 25.0, 595.0, 20.0),
+      const Rect.fromLTWH(0.0, 25.0, 595.0, 20.0),
       format: PdfStringFormat(alignment: PdfTextAlignment.center),
     );
 
-    graphics.drawString(
+    drawBoldString(
       provider.branch,
       fontBold,
-      bounds: const Rect.fromLTWH(35.0, 55.0, 200.0, 10.0),
+      const Rect.fromLTWH(35.0, 55.0, 200.0, 10.0),
     );
 
     double boxY = 72.0;
@@ -189,18 +197,18 @@ class _EStatementPageState extends State<EStatementPage> {
     double textLeftX = 35.0;
     double textLeftY = boxY + 10.0;
 
-    graphics.drawString(
+    drawBoldString(
       widget.userName.toUpperCase(),
       fontBold,
-      bounds: Rect.fromLTWH(textLeftX, textLeftY, 240.0, 10.0),
+      Rect.fromLTWH(textLeftX, textLeftY, 240.0, 10.0),
     );
 
     for (int i = 0; i < provider.address.length; i++) {
       textLeftY += 14.0;
-      graphics.drawString(
+      drawBoldString(
         provider.address[i],
         fontBold,
-        bounds: Rect.fromLTWH(textLeftX, textLeftY, 240.0, 10.0),
+        Rect.fromLTWH(textLeftX, textLeftY, 240.0, 10.0),
       );
     }
 
@@ -218,68 +226,68 @@ class _EStatementPageState extends State<EStatementPage> {
     double colonX = rightBoxX + 85.0;
     double valueX = rightBoxX + 95.0;
 
-    graphics.drawString(
+    drawBoldString(
       'NO. REKENING',
       fontBold,
-      bounds: Rect.fromLTWH(textRightX, textRightY, 80.0, 10.0),
+      Rect.fromLTWH(textRightX, textRightY, 80.0, 10.0),
     );
-    graphics.drawString(
+    drawBoldString(
       ':',
       fontBold,
-      bounds: Rect.fromLTWH(colonX, textRightY, 10.0, 10.0),
+      Rect.fromLTWH(colonX, textRightY, 10.0, 10.0),
     );
-    graphics.drawString(
+    drawBoldString(
       widget.accountNumber,
       fontBold,
-      bounds: Rect.fromLTWH(valueX, textRightY, 120.0, 10.0),
+      Rect.fromLTWH(valueX, textRightY, 120.0, 10.0),
     );
 
-    graphics.drawString(
+    drawBoldString(
       'HALAMAN',
       fontBold,
-      bounds: Rect.fromLTWH(textRightX, textRightY + 16.0, 80.0, 10.0),
+      Rect.fromLTWH(textRightX, textRightY + 16.0, 80.0, 10.0),
     );
-    graphics.drawString(
+    drawBoldString(
       ':',
       fontBold,
-      bounds: Rect.fromLTWH(colonX, textRightY + 16.0, 10.0, 10.0),
+      Rect.fromLTWH(colonX, textRightY + 16.0, 10.0, 10.0),
     );
-    graphics.drawString(
+    drawBoldString(
       '$pageNum / $totalPages',
       fontBold,
-      bounds: Rect.fromLTWH(valueX, textRightY + 16.0, 120.0, 10.0),
+      Rect.fromLTWH(valueX, textRightY + 16.0, 120.0, 10.0),
     );
 
-    graphics.drawString(
+    drawBoldString(
       'PERIODE',
       fontBold,
-      bounds: Rect.fromLTWH(textRightX, textRightY + 32.0, 80.0, 10.0),
+      Rect.fromLTWH(textRightX, textRightY + 32.0, 80.0, 10.0),
     );
-    graphics.drawString(
+    drawBoldString(
       ':',
       fontBold,
-      bounds: Rect.fromLTWH(colonX, textRightY + 32.0, 10.0, 10.0),
+      Rect.fromLTWH(colonX, textRightY + 32.0, 10.0, 10.0),
     );
-    graphics.drawString(
+    drawBoldString(
       periodStr,
       fontBold,
-      bounds: Rect.fromLTWH(valueX, textRightY + 32.0, 120.0, 10.0),
+      Rect.fromLTWH(valueX, textRightY + 32.0, 120.0, 10.0),
     );
 
-    graphics.drawString(
+    drawBoldString(
       'MATA UANG',
       fontBold,
-      bounds: Rect.fromLTWH(textRightX, textRightY + 48.0, 80.0, 10.0),
+      Rect.fromLTWH(textRightX, textRightY + 48.0, 80.0, 10.0),
     );
-    graphics.drawString(
+    drawBoldString(
       ':',
       fontBold,
-      bounds: Rect.fromLTWH(colonX, textRightY + 48.0, 10.0, 10.0),
+      Rect.fromLTWH(colonX, textRightY + 48.0, 10.0, 10.0),
     );
-    graphics.drawString(
+    drawBoldString(
       'IDR',
       fontBold,
-      bounds: Rect.fromLTWH(valueX, textRightY + 48.0, 120.0, 10.0),
+      Rect.fromLTWH(valueX, textRightY + 48.0, 120.0, 10.0),
     );
 
     double catBoxY = 176.0;
@@ -292,37 +300,45 @@ class _EStatementPageState extends State<EStatementPage> {
       borderRadius,
     );
 
-    graphics.drawString(
+    drawBoldString(
       'CATATAN:',
       fontCatatanTitle,
-      bounds: Rect.fromLTWH(32.0, catBoxY + 5.0, 100.0, 10.0),
+      Rect.fromLTWH(32.0, catBoxY + 5.0, 100.0, 10.0),
+      format: PdfStringFormat(characterSpacing: 2.0),
     );
 
     final PdfStringFormat justifyFormat = PdfStringFormat(
       alignment: PdfTextAlignment.justify,
       lineSpacing: 5.0,
+      characterSpacing: 0.5,
+    );
+
+    final PdfStringFormat bulletFormat = PdfStringFormat(
+      characterSpacing: 0.5,
     );
 
     graphics.drawString(
       '•',
-      fontSmallItalic,
+      fontCatatanBody,
       bounds: Rect.fromLTWH(32.0, catBoxY + 18.0, 10.0, 10.0),
+      format: bulletFormat,
     );
     graphics.drawString(
       'Apabila nasabah tidak melakukan sanggahan atas Laporan Mutasi Rekening ini sampai dengan akhir bulan berikutnya, nasabah dianggap telah menyetujui segala data yang tercantum pada Laporan Mutasi Rekening ini.',
-      fontSmallItalic,
+      fontCatatanBody,
       bounds: Rect.fromLTWH(40.0, catBoxY + 18.0, 240.0, 45.0),
       format: justifyFormat,
     );
 
     graphics.drawString(
       '•',
-      fontSmallItalic,
+      fontCatatanBody,
       bounds: Rect.fromLTWH(310.0, catBoxY + 18.0, 10.0, 10.0),
+      format: bulletFormat,
     );
     graphics.drawString(
       'BCA berhak setiap saat melakukan koreksi apabila ada kesalahan pada Laporan Mutasi Rekening.',
-      fontSmallItalic,
+      fontCatatanBody,
       bounds: Rect.fromLTWH(318.0, catBoxY + 18.0, 240.0, 45.0),
       format: justifyFormat,
     );
@@ -521,12 +537,24 @@ class _EStatementPageState extends State<EStatementPage> {
       document.pageSettings.size = PdfPageSize.a4;
       document.pageSettings.margins.all = 0;
 
-      final PdfFont fontRegular = PdfStandardFont(PdfFontFamily.helvetica, 7);
-      final PdfFont fontItalic = PdfStandardFont(
-        PdfFontFamily.helvetica,
-        7,
-        style: PdfFontStyle.italic,
-      );
+      List<int>? fontData;
+      try {
+        final ByteData bd = await rootBundle.load('assets/fonts/UntitleddTTF.ttf');
+        fontData = bd.buffer.asUint8List();
+      } catch (e) {
+        debugPrint('Font tidak ditemukan: $e');
+      }
+
+      final PdfFont fontRegular = fontData != null
+          ? PdfTrueTypeFont(fontData, 7)
+          : PdfStandardFont(PdfFontFamily.helvetica, 7);
+      final PdfFont fontItalic = fontData != null
+          ? PdfTrueTypeFont(fontData, 7, style: PdfFontStyle.italic)
+          : PdfStandardFont(
+              PdfFontFamily.helvetica,
+              7,
+              style: PdfFontStyle.italic,
+            );
 
       PdfBitmap? logoBitmap;
       try {
@@ -805,6 +833,7 @@ class _EStatementPageState extends State<EStatementPage> {
           periodStr,
           logoBitmap,
           provider,
+          fontData,
         );
       }
 

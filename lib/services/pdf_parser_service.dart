@@ -8,8 +8,12 @@ class PdfParserService {
   static String detectedYear = "";
   static double detectedStartingBalance = 734147.95;
 
-  static String detectedBranch = "KCP PERAK";
+  static String detectedBranch = '';
+  static String detectedName = '';
+  static String detectedAccountNumber = '';
+  static String detectedAccountType = 'REKENING TAHAPAN'; // e.g. REKENING TAHAPAN
   static List<String> detectedAddress = [];
+  static String lastRawTextPreview = ''; // for debug
 
   static Future<bool> isPasswordRequired(String filePath) async {
     try {
@@ -34,16 +38,39 @@ class PdfParserService {
         inputBytes: bytes,
         password: password,
       );
+
+      // Extract full text WITH layout for transaction parsing
       final String text = PdfTextExtractor(
         document,
       ).extractText(layoutText: true);
 
+      // Extract page 1 WITHOUT layout to get header info (branch, address, name)
+      // layoutText:false gives plain text without positional spaces
+      final String headerText = PdfTextExtractor(
+        document,
+      ).extractText(startPageIndex: 0, endPageIndex: 0, layoutText: false);
+
       String currentYear = DateTime.now().year.toString();
 
-      detectedBranch = "KCP PERAK";
+      detectedBranch = '';
+      detectedName = '';
+      detectedAccountNumber = '';
       detectedAddress = [];
 
-      final linesForAddress = text.split('\n');
+      // Save first 60 lines of HEADER text for debugging
+      final linesForAddress = headerText.split('\n');
+      lastRawTextPreview = linesForAddress.take(60).join('\n');
+
+      // Extract account type from the first non-empty line (e.g. "REKENING TAHAPAN")
+      for (final headerLine in linesForAddress) {
+        final trimmed = headerLine.trim();
+        if (trimmed.isNotEmpty) {
+          detectedAccountType = trimmed.toUpperCase();
+          break;
+        }
+      }
+
+      bool passedBCA = false;
       bool foundBranch = false;
       bool foundName = false;
       List<String> tempAddress = [];
@@ -52,17 +79,51 @@ class PdfParserService {
         String line = linesForAddress[i].trim();
         if (line.isEmpty) continue;
 
-        String leftPart = line.split(RegExp(r' {2,}'))[0].trim();
+        String upperLine = line.toUpperCase();
+        String leftPart = line.split(RegExp(r'\s{3,}'))[0].trim();
         String upperLeft = leftPart.toUpperCase();
 
-        if (!foundBranch &&
-            (upperLeft.startsWith('KCP ') || upperLeft.startsWith('CABANG '))) {
-          detectedBranch = upperLeft;
+        if (!passedBCA) {
+          if (upperLine.contains('BANK CENTRAL ASIA')) {
+            passedBCA = true;
+          }
+          // Fallback if BANK CENTRAL ASIA was somehow missed
+          else if (!foundBranch &&
+              (upperLine.startsWith('KCP') || 
+               upperLine.startsWith('KCU') ||
+               upperLine.startsWith('KPO') ||
+               upperLine.startsWith('CABANG') ||
+               upperLine.startsWith('KANTOR'))) {
+            
+            String branch = line;
+            if (branch.toUpperCase().contains('PERIODE')) {
+              branch = branch.substring(0, branch.toUpperCase().indexOf('PERIODE')).trim();
+            }
+            if (branch.toUpperCase().contains('HALAMAN')) {
+              branch = branch.substring(0, branch.toUpperCase().indexOf('HALAMAN')).trim();
+            }
+            detectedBranch = branch.toUpperCase();
+            foundBranch = true;
+            passedBCA = true;
+          }
+          continue;
+        }
+
+        if (passedBCA && !foundBranch) {
+          String branch = line;
+          if (branch.toUpperCase().contains('PERIODE')) {
+            branch = branch.substring(0, branch.toUpperCase().indexOf('PERIODE')).trim();
+          }
+          if (branch.toUpperCase().contains('HALAMAN')) {
+            branch = branch.substring(0, branch.toUpperCase().indexOf('HALAMAN')).trim();
+          }
+          detectedBranch = branch.toUpperCase();
           foundBranch = true;
           continue;
         }
 
         if (foundBranch && !foundName) {
+          detectedName = upperLeft;
           foundName = true;
           continue;
         }
@@ -75,7 +136,7 @@ class PdfParserService {
               upperLeft.startsWith('CATATAN') ||
               upperLeft.startsWith('TANGGAL') ||
               upperLeft.startsWith('SALDO AWAL') ||
-              upperLeft.contains('PT BANK CENTRAL ASIA')) {
+              upperLeft.contains('BANK CENTRAL ASIA')) {
             break;
           }
 
@@ -99,11 +160,18 @@ class PdfParserService {
         r'PERIODE\s*:.*?([A-Za-z]+)\s*(\d{4})',
         caseSensitive: false,
       );
-      final periodMatch = periodRegex.firstMatch(text);
+      // Try headerText first, fallback to full text
+      final periodMatch = periodRegex.firstMatch(headerText) ?? periodRegex.firstMatch(text);
       if (periodMatch != null) {
         detectedMonth = periodMatch.group(1)!.toUpperCase();
         detectedYear = periodMatch.group(2)!;
         currentYear = detectedYear;
+      }
+
+      final accountRegex = RegExp(r'NO\.?\s*REKENING\s*:?\s*(\d+)');
+      final accountMatch = accountRegex.firstMatch(headerText) ?? accountRegex.firstMatch(text);
+      if (accountMatch != null) {
+        detectedAccountNumber = accountMatch.group(1)!;
       }
 
       final lines = text.split('\n');
