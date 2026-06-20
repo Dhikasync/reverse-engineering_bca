@@ -146,6 +146,9 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                       child: Container(
                         decoration: const BoxDecoration(
                           color: Colors.white,
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
                           border: Border(
                             bottom: BorderSide(
                               color: Color(0xFFEEEEEE),
@@ -153,35 +156,42 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                             ),
                           ),
                         ),
-                        child: TabBar(
-                          controller: _tabController,
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                          indicatorSize: TabBarIndicatorSize.tab,
-                          labelPadding: const EdgeInsets.symmetric(
-                            horizontal: 2.0,
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20),
                           ),
-                          labelColor: const Color(0xFF00529C),
-                          unselectedLabelColor: Colors.grey.shade500,
-                          indicatorColor: const Color(0xFF00529C),
-                          indicatorWeight: 3,
-                          labelStyle: GoogleFonts.openSans(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                          unselectedLabelStyle: GoogleFonts.openSans(
-                            fontWeight: FontWeight.normal,
-                            fontSize: 12,
-                          ),
-                          tabs: const [
-                            Tab(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text('Account Transactions'),
-                              ),
+                          child: TabBar(
+                            controller: _tabController,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12.0,
                             ),
-                            Tab(text: 'Card'),
-                            Tab(text: 'Pocket'),
-                          ],
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            labelPadding: const EdgeInsets.symmetric(
+                              horizontal: 2.0,
+                            ),
+                            labelColor: const Color(0xFF00529C),
+                            unselectedLabelColor: Colors.grey.shade500,
+                            indicatorColor: const Color(0xFF00529C),
+                            indicatorWeight: 3,
+                            labelStyle: GoogleFonts.openSans(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                            unselectedLabelStyle: GoogleFonts.openSans(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                            tabs: const [
+                              Tab(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('Account Transactions'),
+                                ),
+                              ),
+                              Tab(text: 'Card'),
+                              Tab(text: 'Pocket'),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -266,12 +276,14 @@ class _AccountInformationPageState extends State<AccountInformationPage>
             // --- PERUBAHAN NAVIGASI HALAMAN E-STATEMENT DI SINI ---
             GestureDetector(
               onTap: () {
-                // Buka halaman e-Statement secara penuh (Full Page)
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) {
-                      final provider = Provider.of<TransactionProvider>(context, listen: false);
+                      final provider = Provider.of<TransactionProvider>(
+                        context,
+                        listen: false,
+                      );
                       return EStatementPage(
                         userName: widget.userName,
                         accountNumber: widget.accountNumber,
@@ -297,7 +309,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
               ),
             ),
 
-            // --------------------------------------------------------
             const SizedBox(width: 8),
             Container(
               height: 40,
@@ -340,7 +351,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
       );
     }
 
-    // Helper function to translate month abbreviation to English
     String mapMonthToEnglish(String monthShort) {
       switch (monthShort.toLowerCase()) {
         case 'jan':
@@ -380,34 +390,28 @@ class _AccountInformationPageState extends State<AccountInformationPage>
       controller: _transactionScrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      itemCount: transactions
-          .length, // Ubah menjadi length karena tidak perlu dummy item index 0 lagi
+      itemCount: transactions.length,
       itemBuilder: (context, index) {
         final tx = transactions[index];
         bool showHeader = false;
         String displayMonth = "";
 
-        // Ekstrak bulan dan tahun dari tx.dateOrStatus (format: 15\nAUG\n2023)
         List<String> parts = tx.dateOrStatus.split('\n');
         if (parts.length >= 3) {
           String monthShort = parts[1];
-          // String year = parts[2];
           String engMonth = mapMonthToEnglish(monthShort);
           displayMonth = engMonth;
 
           if (index == 0) {
-            showHeader = true; // Selalu tampilkan header di awal list
+            showHeader = true;
           } else {
-            // Bandingkan dengan bulan pada transaksi sebelumnya
             final prevTx = transactions[index - 1];
             List<String> prevParts = prevTx.dateOrStatus.split('\n');
             if (prevParts.length >= 3) {
               String prevMonthShort = prevParts[1];
-              // String prevYear = prevParts[2];
               String prevEngMonth = mapMonthToEnglish(prevMonthShort);
               String prevDisplayMonth = prevEngMonth;
 
-              // Jika bulannya berbeda, trigger header
               if (displayMonth != prevDisplayMonth) {
                 showHeader = true;
               }
@@ -416,7 +420,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
             }
           }
         } else if (index == 0) {
-          // Fallback jika format berbeda
           if (provider.activeMonth.isNotEmpty) {
             String rawMonth = provider.activeMonth;
             displayMonth = rawMonth
@@ -440,7 +443,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
           isDebit: tx.isDebit,
         );
 
-        // Jika transaksi ini butuh header, bungkus dengan Column
         if (showHeader && displayMonth.isNotEmpty) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,16 +450,14 @@ class _AccountInformationPageState extends State<AccountInformationPage>
               Padding(
                 padding: EdgeInsets.only(
                   bottom: 12.0,
-                  top: index == 0
-                      ? 4.0
-                      : 20.0, // Jarak lebih besar jika berada di tengah list
+                  top: index == 0 ? 4.0 : 20.0,
                   left: 4.0,
                 ),
                 child: Text(
                   displayMonth,
                   style: GoogleFonts.openSans(
-                    color: const Color(0xFF00529C), // Warna Biru khas BCA
-                    fontWeight: FontWeight.w800, // Font Bold
+                    color: const Color(0xFF00529C),
+                    fontWeight: FontWeight.w800,
                     fontSize: 16,
                   ),
                 ),
@@ -467,7 +467,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
           );
         }
 
-        // Jika tidak ada perubahan bulan, langsung return tile transaksi biasa
         return transactionTile;
       },
     );
@@ -546,7 +545,6 @@ class _AccountCardDelegate extends SliverPersistentHeaderDelegate {
       0.0,
       1.0,
     );
-
     double horizontalPadding = 16.0;
     double topPadding = 12.0 - (4.0 * shrinkProgress);
     double bottomPadding = 20.0 - (4.0 * shrinkProgress);
@@ -820,7 +818,6 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                   ),
                 ),
               ),
-
               Positioned(
                 top: 0,
                 left: 0,
@@ -982,8 +979,9 @@ class TransactionTile extends StatelessWidget {
             parts[0],
             style: GoogleFonts.openSans(
               color: const Color(0xFF333333).withValues(alpha: 0.5),
-              fontWeight: FontWeight.w500,
-              fontSize: 26,
+              // --- PERUBAHAN: Mengurangi ketebalan ke w700 & mengatur ukuran hari ---
+              fontWeight: FontWeight.w700,
+              fontSize: 28,
               height: 1.1,
             ),
           ),
@@ -992,7 +990,8 @@ class TransactionTile extends StatelessWidget {
             parts[1].toUpperCase(),
             style: GoogleFonts.openSans(
               color: Colors.grey.shade500.withValues(alpha: 0.5),
-              fontWeight: FontWeight.bold,
+              // --- PERUBAHAN: Mengurangi ketebalan ke w700 & menyamakan ukuran bulan ke ukuran tahun ---
+              fontWeight: FontWeight.w700,
               fontSize: 10,
               height: 1.0,
             ),
@@ -1001,7 +1000,8 @@ class TransactionTile extends StatelessWidget {
             parts[2],
             style: GoogleFonts.openSans(
               color: Colors.grey.shade500.withValues(alpha: 0.5),
-              fontWeight: FontWeight.bold,
+              // --- PERUBAHAN: Mengurangi ketebalan ke w700 & mempertahankan ukuran tahun asli ---
+              fontWeight: FontWeight.w700,
               fontSize: 10,
               height: 1.0,
             ),
@@ -1017,9 +1017,10 @@ class TransactionTile extends StatelessWidget {
           textAlign: TextAlign.center,
           style: GoogleFonts.openSans(
             color: isPending ? Colors.orange.shade700 : Colors.grey.shade400,
-            fontWeight: FontWeight.bold,
+            // --- PERUBAHAN: Mengurangi ketebalan fallback status ke w700 ---
+            fontWeight: FontWeight.w700,
             fontStyle: isPending ? FontStyle.italic : FontStyle.normal,
-            fontSize: 13,
+            fontSize: 14,
           ),
         ),
       );
