@@ -56,11 +56,12 @@ class _SettingsPageState extends State<SettingsPage> {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
     _accountTypeController = TextEditingController(text: provider.accountType);
     _branchController = TextEditingController(text: provider.branch);
-    _addr1Controller = TextEditingController();
-    _addr2Controller = TextEditingController();
-    _addr3Controller = TextEditingController();
-    _addr4Controller = TextEditingController();
-    _addr5Controller = TextEditingController();
+    final providerAddress = provider.address;
+    _addr1Controller = TextEditingController(text: providerAddress.isNotEmpty ? providerAddress[0] : '');
+    _addr2Controller = TextEditingController(text: providerAddress.length > 1 ? providerAddress[1] : '');
+    _addr3Controller = TextEditingController(text: providerAddress.length > 2 ? providerAddress[2] : '');
+    _addr4Controller = TextEditingController(text: providerAddress.length > 3 ? providerAddress[3] : '');
+    _addr5Controller = TextEditingController(text: providerAddress.length > 4 ? providerAddress[4] : '');
 
     // Listen to any change
     for (final c in [
@@ -110,16 +111,23 @@ class _SettingsPageState extends State<SettingsPage> {
     final branch = _branchController.text.trim();
     final accountType = _accountTypeController.text.trim();
     final addr = provider.address;
-    final a1 = _addr1Controller.text.trim().isNotEmpty ? _addr1Controller.text.trim() : (addr.isNotEmpty ? addr[0] : 'TANDES');
-    final a2 = _addr2Controller.text.trim().isNotEmpty ? _addr2Controller.text.trim() : (addr.length > 1 ? addr[1] : 'RT005 RW006 JAWA TIMUR');
-    final a3 = _addr3Controller.text.trim().isNotEmpty ? _addr3Controller.text.trim() : (addr.length > 2 ? addr[2] : 'GADEL TENGAH II NO 05');
-    final a4 = _addr4Controller.text.trim().isNotEmpty ? _addr4Controller.text.trim() : (addr.length > 3 ? addr[3] : 'SURABAYA 60186');
-    final a5 = _addr5Controller.text.trim().isNotEmpty ? _addr5Controller.text.trim() : (addr.length > 4 ? addr[4] : 'INDONESIA');
+    final a1 = _addr1Controller.text.trim().isNotEmpty ? _addr1Controller.text.trim() : (addr.isNotEmpty ? addr[0] : '');
+    final a2 = _addr2Controller.text.trim().isNotEmpty ? _addr2Controller.text.trim() : (addr.length > 1 ? addr[1] : '');
+    final a3 = _addr3Controller.text.trim().isNotEmpty ? _addr3Controller.text.trim() : (addr.length > 2 ? addr[2] : '');
+    final a4 = _addr4Controller.text.trim().isNotEmpty ? _addr4Controller.text.trim() : (addr.length > 3 ? addr[3] : '');
+    final a5 = _addr5Controller.text.trim().isNotEmpty ? _addr5Controller.text.trim() : (addr.length > 4 ? addr[4] : '');
     
     final addressLines = [a1, a2, a3, a4, a5].where((l) => l.isNotEmpty).toList();
     provider.setBranchAndAddress(branch, addressLines);
     PdfParserService.detectedAccountType = accountType.toUpperCase();
     provider.setAccountType(accountType.toUpperCase());
+    
+    // Save User Profile (Name, Account, Balance)
+    provider.setUserProfile(
+      _nameController.text.trim(),
+      _accountNumberController.text.trim(),
+      _balanceController.text.trim(),
+    );
 
     setState(() => _hasChanges = false);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -232,6 +240,36 @@ class _SettingsPageState extends State<SettingsPage> {
 
     List<TransactionModel> allTransactions = [];
     int successCount = 0;
+    
+    Map<String, double> newMonthlyBalances = {};
+    double? oldestStartingBalance;
+    DateTime? oldestDate;
+
+    DateTime parseDateSimple(String dateStr) {
+      try {
+        final parts = dateStr.split('\n');
+        if (parts.length < 3) return DateTime.now();
+        int day = int.parse(parts[0]);
+        int year = int.parse(parts[2]);
+        String monthStr = parts[1].toLowerCase();
+        int month = 1;
+        if (monthStr.startsWith('jan')) month = 1;
+        else if (monthStr.startsWith('feb')) month = 2;
+        else if (monthStr.startsWith('mar')) month = 3;
+        else if (monthStr.startsWith('apr')) month = 4;
+        else if (monthStr.startsWith('may') || monthStr.startsWith('mei')) month = 5;
+        else if (monthStr.startsWith('jun')) month = 6;
+        else if (monthStr.startsWith('jul')) month = 7;
+        else if (monthStr.startsWith('aug') || monthStr.startsWith('agu')) month = 8;
+        else if (monthStr.startsWith('sep')) month = 9;
+        else if (monthStr.startsWith('oct') || monthStr.startsWith('okt')) month = 10;
+        else if (monthStr.startsWith('nov')) month = 11;
+        else if (monthStr.startsWith('dec') || monthStr.startsWith('des')) month = 12;
+        return DateTime(year, month, day);
+      } catch (e) {
+        return DateTime.now();
+      }
+    }
 
     try {
       for (var file in _selectedFiles) {
@@ -256,6 +294,19 @@ class _SettingsPageState extends State<SettingsPage> {
             if (transactions.isNotEmpty) {
               allTransactions.addAll(transactions);
               successCount++;
+              
+              DateTime fileDate = parseDateSimple(transactions.first.dateOrStatus);
+              
+              String monthStr = transactions.first.dateOrStatus.split('\n').length > 1 
+                  ? transactions.first.dateOrStatus.split('\n')[1] 
+                  : '';
+              String monthYear = "${getIndonesianMonth(fileDate.month)} ${fileDate.year}";
+              newMonthlyBalances[monthYear] = PdfParserService.detectedStartingBalance;
+
+              if (oldestDate == null || fileDate.isBefore(oldestDate!)) {
+                oldestDate = fileDate;
+                oldestStartingBalance = PdfParserService.detectedStartingBalance;
+              }
             }
           } catch (fileError) {
             if (mounted) {
@@ -282,7 +333,7 @@ class _SettingsPageState extends State<SettingsPage> {
           Provider.of<TransactionProvider>(
             context,
             listen: false,
-          ).processNewPdfTransactions(allTransactions, "", "");
+          ).processNewPdfTransactions(allTransactions, "", "", newMonthlyBalances);
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -303,8 +354,12 @@ class _SettingsPageState extends State<SettingsPage> {
               _accountNumberController.text =
                   PdfParserService.detectedAccountNumber;
             }
-            _balanceController.text = PdfParserService.detectedStartingBalance
-                .toStringAsFixed(0);
+            if (oldestStartingBalance != null) {
+              _balanceController.text = oldestStartingBalance!.toStringAsFixed(0);
+            } else {
+              _balanceController.text = PdfParserService.detectedStartingBalance
+                  .toStringAsFixed(0);
+            }
 
             // Auto-fill account type if detected
             if (PdfParserService.detectedAccountType.isNotEmpty) {
@@ -340,6 +395,15 @@ class _SettingsPageState extends State<SettingsPage> {
         });
       }
     }
+  }
+
+  String getIndonesianMonth(int month) {
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    if (month >= 1 && month <= 12) return months[month - 1];
+    return '';
   }
 
   Future<String?> _showPasswordDialog([String? fileName]) async {
@@ -562,37 +626,37 @@ class _SettingsPageState extends State<SettingsPage> {
                                   children: [
                                     _buildTextField(
                                       controller: _addr1Controller,
-                                      label: 'TANDES',
+                                      label: 'Address Line 1',
                                       icon: Icons.location_on_outlined,
-                                      hintText: addr.isNotEmpty ? addr[0] : 'TANDES',
+                                      hintText: addr.isNotEmpty ? addr[0] : '',
                                     ),
                                     const SizedBox(height: 8),
                                     _buildTextField(
                                       controller: _addr2Controller,
-                                      label: 'RT005 RW006 JAWA TIMUR',
+                                      label: 'Address Line 2',
                                       icon: Icons.location_on_outlined,
-                                      hintText: addr.length > 1 ? addr[1] : 'RT005 RW006 JAWA TIMUR',
+                                      hintText: addr.length > 1 ? addr[1] : '',
                                     ),
                                     const SizedBox(height: 8),
                                     _buildTextField(
                                       controller: _addr3Controller,
-                                      label: 'GADEL TENGAH II NO 05',
+                                      label: 'Address Line 3',
                                       icon: Icons.location_on_outlined,
-                                      hintText: addr.length > 2 ? addr[2] : 'GADEL TENGAH II NO 05',
+                                      hintText: addr.length > 2 ? addr[2] : '',
                                     ),
                                     const SizedBox(height: 8),
                                     _buildTextField(
                                       controller: _addr4Controller,
-                                      label: 'SURABAYA 60186',
+                                      label: 'Address Line 4',
                                       icon: Icons.location_on_outlined,
-                                      hintText: addr.length > 3 ? addr[3] : 'SURABAYA 60186',
+                                      hintText: addr.length > 3 ? addr[3] : '',
                                     ),
                                     const SizedBox(height: 8),
                                     _buildTextField(
                                       controller: _addr5Controller,
-                                      label: 'INDONESIA',
+                                      label: 'Address Line 5',
                                       icon: Icons.location_on_outlined,
-                                      hintText: addr.length > 4 ? addr[4] : 'INDONESIA',
+                                      hintText: addr.length > 4 ? addr[4] : '',
                                     ),
                                   ],
                                 );
@@ -822,6 +886,80 @@ class _SettingsPageState extends State<SettingsPage> {
                                   const ManageTransactionsPage(),
                             ),
                           );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 5. Clear PDF Data Card
+                    Card(
+                      elevation: 2,
+                      shadowColor: Colors.black.withValues(alpha: 0.05),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                      color: Colors.white,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.red.shade50,
+                          child: const Icon(Icons.delete_sweep, color: Colors.red),
+                        ),
+                        title: const Text(
+                          'Clear PDF Data',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                        subtitle: const Text(
+                          'Remove all uploaded PDF transactions and start fresh',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        trailing: const Icon(
+                          Icons.warning_amber_rounded,
+                          size: 20,
+                          color: Colors.red,
+                        ),
+                        onTap: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Clear All Data?'),
+                              content: const Text(
+                                'This will delete all transactions currently loaded in the app. This action cannot be undone. Are you sure?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text('Clear Data'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true && mounted) {
+                            Provider.of<TransactionProvider>(context, listen: false).clearTransactions();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('All PDF transaction data has been cleared.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         },
                       ),
                     ),

@@ -6,6 +6,8 @@ import 'package:reverse_engineering_bca/settings/settings_page.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import 'package:reverse_engineering_bca/providers/transaction_provider.dart';
 
 class MyBcaHomeScreen extends StatefulWidget {
   const MyBcaHomeScreen({super.key});
@@ -59,6 +61,10 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
   @override
   Widget build(BuildContext context) {
     scale = (MediaQuery.of(context).size.width / 430.0).clamp(0.7, 1.0);
+    final provider = context.watch<TransactionProvider>();
+    userName = provider.userName;
+    accountNumber = provider.accountNumber;
+    balance = provider.balance;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F8),

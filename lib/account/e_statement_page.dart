@@ -564,10 +564,8 @@ class _EStatementPageState extends State<EStatementPage> {
         }
       }
 
-      double runningBalance = provider.startingBalance;
+      double startingBalanceForMonth = provider.getStartingBalanceForMonth(targetShortMonth, targetYear);
       List<TransactionModel> targetTransactions = [];
-      double startingBalanceForMonth = runningBalance;
-      bool foundTargetMonth = false;
 
       for (var tx in chronologicalTransactions) {
         final parts = tx.dateOrStatus.split('\n');
@@ -579,25 +577,9 @@ class _EStatementPageState extends State<EStatementPage> {
               txMonth.toLowerCase() == targetShortMonth.toLowerCase() &&
               txYear == targetYear;
 
-          if (isTargetMonth && !foundTargetMonth) {
-            foundTargetMonth = true;
-            startingBalanceForMonth = runningBalance;
-          }
-
           if (isTargetMonth) {
             targetTransactions.add(tx);
           }
-        }
-
-        String rawAmount = tx.amount
-            .replaceAll('IDR', '')
-            .replaceAll(',', '')
-            .trim();
-        double amount = double.tryParse(rawAmount) ?? 0.0;
-        if (tx.isDebit) {
-          runningBalance -= amount;
-        } else {
-          runningBalance += amount;
         }
       }
 

@@ -33,4 +33,26 @@ class TransactionModel {
       isDebit: isDebit ?? this.isDebit,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'dateOrStatus': dateOrStatus,
+      'keteranganKiri': keteranganKiri,
+      'keteranganKanan': keteranganKanan,
+      'subtitle': subtitle,
+      'amount': amount,
+      'isDebit': isDebit,
+    };
+  }
+
+  factory TransactionModel.fromJson(Map<String, dynamic> json) {
+    return TransactionModel(
+      dateOrStatus: json['dateOrStatus'] ?? '',
+      keteranganKiri: json['keteranganKiri'] ?? '',
+      keteranganKanan: json['keteranganKanan'] ?? '',
+      subtitle: json['subtitle'] ?? '',
+      amount: json['amount'] ?? '',
+      isDebit: json['isDebit'] ?? true,
+    );
+  }
 }
