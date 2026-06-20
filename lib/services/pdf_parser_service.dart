@@ -198,12 +198,38 @@ class PdfParserService {
                 .map((e) => e.trim())
                 .where((e) => e.isNotEmpty)
                 .toList();
-            title = titleLines.join('\n');
+
+            String keteranganKiri = '';
+            String keteranganKanan = '';
+
+            if (titleLines.isNotEmpty) {
+              String firstLine = titleLines.first;
+              final prefixRegex = RegExp(
+                r'^(TRSF E-BANKING CR|TRSF E-BANKING DB|SETORAN VIA CDM \d{2}/\d{2}|TARIKAN ATM \d{2}/\d{2}|SWITCHING (?:DB|CR) TRANSFER[^\d/]*\d*|BIAYA ADM|PAJAK BUNGA|BUNGA|PEND KARTU|BIAYA KARTU|SALDO AWAL|KOR\.? (?:KREDIT|DEBET)|KOREKSI)',
+                caseSensitive: false,
+              );
+              final match = prefixRegex.firstMatch(firstLine);
+              if (match != null) {
+                keteranganKiri = match.group(0)!.trim();
+                String remainder = firstLine.substring(match.end).trim();
+                if (remainder.isNotEmpty) {
+                  keteranganKanan = remainder + '\n';
+                }
+              } else {
+                keteranganKiri = firstLine;
+              }
+
+              for (int i = 1; i < titleLines.length; i++) {
+                keteranganKanan += titleLines[i] + '\n';
+              }
+              keteranganKanan = keteranganKanan.trim();
+            }
 
             transactions.add(
               TransactionModel(
                 dateOrStatus: formattedDate,
-                title: title,
+                keteranganKiri: keteranganKiri,
+                keteranganKanan: keteranganKanan,
                 subtitle: isDebit ? 'TRANSAKSI DEBIT' : 'TRANSAKSI KREDIT',
                 amount: 'IDR $mutasiAmount',
                 isDebit: isDebit,

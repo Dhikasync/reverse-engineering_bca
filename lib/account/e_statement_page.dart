@@ -522,6 +522,11 @@ class _EStatementPageState extends State<EStatementPage> {
       document.pageSettings.margins.all = 0;
 
       final PdfFont fontRegular = PdfStandardFont(PdfFontFamily.helvetica, 7);
+      final PdfFont fontItalic = PdfStandardFont(
+        PdfFontFamily.helvetica,
+        7,
+        style: PdfFontStyle.italic,
+      );
 
       PdfBitmap? logoBitmap;
       try {
@@ -613,18 +618,29 @@ class _EStatementPageState extends State<EStatementPage> {
           countCr++;
         }
 
-        List<String> titleLines = t.title
+        List<String> leftLines = t.keteranganKiri
             .split('\n')
             .map((l) => l.trim())
             .where((l) => l.isNotEmpty)
             .toList();
-        double rowHeight = 12.0 * titleLines.length + 5.0;
+
+        List<String> rightLines = t.keteranganKanan
+            .split('\n')
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty)
+            .toList();
+
+        int maxLines = leftLines.length > rightLines.length
+            ? leftLines.length
+            : rightLines.length;
+        if (maxLines == 0) maxLines = 1;
+        double rowHeight = 12.0 * maxLines + 5.0;
 
         if (currentY + rowHeight > 755.0) {
           currentPage.graphics.drawString(
             'Bersambung ke halaman berikut',
-            fontRegular,
-            bounds: const Rect.fromLTWH(25.0, 780.0, 430.0, 10.0),
+            fontItalic,
+            bounds: const Rect.fromLTWH(25.0, 780.0, 540.0, 10.0),
             format: PdfStringFormat(alignment: PdfTextAlignment.right),
           );
           currentPage = document.pages.add();
@@ -638,11 +654,19 @@ class _EStatementPageState extends State<EStatementPage> {
           format: PdfStringFormat(alignment: PdfTextAlignment.center),
         );
 
-        for (int i = 0; i < titleLines.length; i++) {
+        for (int i = 0; i < leftLines.length; i++) {
           currentPage.graphics.drawString(
-            titleLines[i],
+            leftLines[i],
             fontRegular,
-            bounds: Rect.fromLTWH(85.0, currentY + (i * 12.0), 190.0, 10.0),
+            bounds: Rect.fromLTWH(85.0, currentY + (i * 12.0), 105.0, 10.0),
+          );
+        }
+
+        for (int i = 0; i < rightLines.length; i++) {
+          currentPage.graphics.drawString(
+            rightLines[i],
+            fontRegular,
+            bounds: Rect.fromLTWH(195.0, currentY + (i * 12.0), 115.0, 10.0),
           );
         }
 
@@ -675,8 +699,8 @@ class _EStatementPageState extends State<EStatementPage> {
       if (currentY + summaryHeight > 755.0) {
         currentPage.graphics.drawString(
           'Bersambung ke halaman berikut',
-          fontRegular,
-          bounds: const Rect.fromLTWH(25.0, 780.0, 430.0, 10.0),
+          fontItalic,
+          bounds: const Rect.fromLTWH(25.0, 780.0, 540.0, 10.0),
           format: PdfStringFormat(alignment: PdfTextAlignment.right),
         );
         currentPage = document.pages.add();

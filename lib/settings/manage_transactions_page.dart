@@ -24,8 +24,11 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
     final TextEditingController dateController = TextEditingController(
       text: isEdit ? tx.dateOrStatus : '',
     );
-    final TextEditingController titleController = TextEditingController(
-      text: isEdit ? tx.title : '',
+    final TextEditingController keteranganKiriController = TextEditingController(
+      text: isEdit ? tx.keteranganKiri : '',
+    );
+    final TextEditingController keteranganKananController = TextEditingController(
+      text: isEdit ? tx.keteranganKanan : '',
     );
     final TextEditingController subtitleController = TextEditingController(
       text: isEdit
@@ -60,10 +63,18 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                     ),
                     const SizedBox(height: 8),
                     TextField(
-                      controller: titleController,
+                      controller: keteranganKiriController,
                       decoration: const InputDecoration(
-                        labelText: 'Title / Transaction Name',
+                        labelText: 'Keterangan Kiri (Mutasi Type)',
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: keteranganKananController,
+                      decoration: const InputDecoration(
+                        labelText: 'Keterangan Kanan (Details)',
+                      ),
+                      maxLines: null,
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -132,7 +143,8 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                       // UPDATE existing transaction
                       final updatedTx = tx.copyWith(
                         dateOrStatus: dateController.text,
-                        title: titleController.text,
+                        keteranganKiri: keteranganKiriController.text,
+                        keteranganKanan: keteranganKananController.text,
                         subtitle: subtitleController.text,
                         amount: amountController.text,
                         isDebit: isDebit,
@@ -147,7 +159,8 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                       // ADD new transaction
                       final newTx = TransactionModel(
                         dateOrStatus: dateController.text,
-                        title: titleController.text,
+                        keteranganKiri: keteranganKiriController.text,
+                        keteranganKanan: keteranganKananController.text,
                         subtitle: subtitleController.text,
                         amount: amountController.text,
                         isDebit: isDebit,
@@ -215,7 +228,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                     ),
                   ),
                   title: Text(
-                    tx.title,
+                    tx.keteranganKiri,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(

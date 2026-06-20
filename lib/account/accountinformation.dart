@@ -433,7 +433,8 @@ class _AccountInformationPageState extends State<AccountInformationPage>
 
         Widget transactionTile = TransactionTile(
           dateOrStatus: tx.dateOrStatus,
-          title: tx.title,
+          keteranganKiri: tx.keteranganKiri,
+          keteranganKanan: tx.keteranganKanan,
           subtitle: tx.subtitle,
           amount: tx.amount,
           isDebit: tx.isDebit,
@@ -882,7 +883,8 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
 
 class TransactionTile extends StatelessWidget {
   final String dateOrStatus;
-  final String title;
+  final String keteranganKiri;
+  final String keteranganKanan;
   final String subtitle;
   final String amount;
   final bool isDebit;
@@ -890,7 +892,8 @@ class TransactionTile extends StatelessWidget {
   const TransactionTile({
     super.key,
     required this.dateOrStatus,
-    required this.title,
+    required this.keteranganKiri,
+    required this.keteranganKanan,
     required this.subtitle,
     required this.amount,
     this.isDebit = true,
@@ -915,13 +918,23 @@ class TransactionTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  keteranganKiri,
                   style: GoogleFonts.openSans(
                     color: const Color(0xFF003366),
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
                 ),
+                if (keteranganKanan.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    keteranganKanan,
+                    style: GoogleFonts.openSans(
+                      color: const Color(0xFF003366),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
