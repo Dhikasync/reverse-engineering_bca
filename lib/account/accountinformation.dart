@@ -393,7 +393,7 @@ class _AccountInformationPageState extends State<AccountInformationPage>
           String monthShort = parts[1];
           // String year = parts[2];
           String engMonth = mapMonthToEnglish(monthShort);
-          displayMonth = "$engMonth";
+          displayMonth = engMonth;
 
           if (index == 0) {
             showHeader = true; // Selalu tampilkan header di awal list
@@ -405,7 +405,7 @@ class _AccountInformationPageState extends State<AccountInformationPage>
               String prevMonthShort = prevParts[1];
               // String prevYear = prevParts[2];
               String prevEngMonth = mapMonthToEnglish(prevMonthShort);
-              String prevDisplayMonth = "$prevEngMonth";
+              String prevDisplayMonth = prevEngMonth;
 
               // Jika bulannya berbeda, trigger header
               if (displayMonth != prevDisplayMonth) {

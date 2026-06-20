@@ -128,7 +128,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    if (isEdit && index != null && tx != null) {
+                    if (isEdit && index != null) {
                       // UPDATE existing transaction
                       final updatedTx = tx.copyWith(
                         dateOrStatus: dateController.text,

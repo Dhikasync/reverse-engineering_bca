@@ -108,7 +108,7 @@ class PdfParserService {
 
       final lines = text.split('\n');
       final RegExp dateRegex = RegExp(r'^(\d{2}/\d{2})');
-      final RegExp amountRegex = RegExp(r'\b\d{1,3}(?:,\d{3})*\.\d{2}\b');
+      final RegExp amountRegex = RegExp(r'(?<![\d.,])\d{1,3}(?:,\d{3})*\.\d{2}(?![\d.,])');
 
       List<String> currentBlock = [];
       int lastMonthProcessed =
@@ -181,14 +181,14 @@ class PdfParserService {
                 ? matches.last.group(0)
                 : null;
 
-            bool isDebit = fullText.contains(RegExp(r'\bDB\b'));
-
             String title = fullText;
             title = title.replaceFirst(date, '');
             title = title.replaceFirst(mutasiAmount, '');
             if (saldoAmount != null) {
               title = title.replaceFirst(saldoAmount, '');
             }
+
+            bool isDebit = title.contains(RegExp(r'\bDB\b'));
             title = title.replaceAll(RegExp(r'\bDB\b'), '');
             title = title.replaceAll(RegExp(r'\bCR\b'), '');
 
@@ -223,16 +223,19 @@ class PdfParserService {
         } else if (currentBlock.isNotEmpty) {
           String upperLine = line.toUpperCase();
 
-          if (upperLine.contains('BERSAMBUNG KE HALAMAN BERIKUT') ||
-              upperLine.contains('REKENING TAHAPAN') ||
-              upperLine.contains('TAPRES') ||
-              upperLine.contains('REKENING GIRO') ||
-              upperLine.startsWith('MUTASI CR') ||
+          if (upperLine.startsWith('MUTASI CR') ||
               upperLine.startsWith('SALDO AKHIR')) {
             processBlock();
             currentBlock = [];
+          } else if (upperLine.startsWith('SALDO AWAL')) {
+            processBlock();
+            currentBlock = [line];
           } else {
-            if (!upperLine.startsWith('KCP ') &&
+            if (!upperLine.contains('BERSAMBUNG KE HALAMAN BERIKUT') &&
+                !upperLine.contains('REKENING TAHAPAN') &&
+                !upperLine.contains('TAPRES') &&
+                !upperLine.contains('REKENING GIRO') &&
+                !upperLine.startsWith('KCP ') &&
                 !upperLine.startsWith('CABANG ') &&
                 !upperLine.startsWith('NO. REKENING') &&
                 !upperLine.startsWith('NAMA') &&

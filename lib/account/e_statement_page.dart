@@ -127,7 +127,6 @@ class _EStatementPageState extends State<EStatementPage> {
       11,
       style: PdfFontStyle.bold,
     );
-    final PdfFont fontRegular = PdfStandardFont(PdfFontFamily.helvetica, 7);
     final PdfFont fontBold = PdfStandardFont(
       PdfFontFamily.helvetica,
       7,
@@ -432,30 +431,31 @@ class _EStatementPageState extends State<EStatementPage> {
         int year = int.tryParse(parts[2]) ?? 2025;
         String m = parts[1].toLowerCase();
         int month = 1;
-        if (m.contains('jan'))
+        if (m.contains('jan')) {
           month = 1;
-        else if (m.contains('feb'))
+        } else if (m.contains('feb')) {
           month = 2;
-        else if (m.contains('mar'))
+        } else if (m.contains('mar')) {
           month = 3;
-        else if (m.contains('apr'))
+        } else if (m.contains('apr')) {
           month = 4;
-        else if (m.contains('may') || m.contains('mei'))
+        } else if (m.contains('may') || m.contains('mei')) {
           month = 5;
-        else if (m.contains('jun'))
+        } else if (m.contains('jun')) {
           month = 6;
-        else if (m.contains('jul'))
+        } else if (m.contains('jul')) {
           month = 7;
-        else if (m.contains('aug') || m.contains('agu'))
+        } else if (m.contains('aug') || m.contains('agu')) {
           month = 8;
-        else if (m.contains('sep'))
+        } else if (m.contains('sep')) {
           month = 9;
-        else if (m.contains('oct') || m.contains('okt'))
+        } else if (m.contains('oct') || m.contains('okt')) {
           month = 10;
-        else if (m.contains('nov'))
+        } else if (m.contains('nov')) {
           month = 11;
-        else if (m.contains('dec') || m.contains('des'))
+        } else if (m.contains('dec') || m.contains('des')) {
           month = 12;
+        }
         return DateTime(year, month, day);
       }
       return DateTime(2000);
@@ -793,6 +793,7 @@ class _EStatementPageState extends State<EStatementPage> {
       await file.writeAsBytes(savedBytes);
 
       if (!mounted) return;
+      // ignore: deprecated_member_use
       await Share.shareXFiles([
         XFile(filePath),
       ], text: 'Laporan Mutasi Rekening ${widget.accountNumber}');
@@ -951,7 +952,7 @@ class _EStatementPageState extends State<EStatementPage> {
                                     fontWeight: FontWeight.w600,
                                     color: const Color(
                                       0xFF003366,
-                                    ).withOpacity(0.4),
+                                    ).withValues(alpha: 0.4),
                                   ),
                                 ),
                               ],

@@ -804,7 +804,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                       borderRadius: BorderRadius.circular(12 * scale),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.07),
+                          color: Colors.black.withValues(alpha: 0.07),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -1190,7 +1190,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                   borderRadius: BorderRadius.circular(12 * scale),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 6,
                       offset: const Offset(1, 2),
                     ),

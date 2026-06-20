@@ -31,7 +31,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _isLoading = false;
 
   // --- TAMBAHAN BARU: List untuk menampung file sebelum diproses ---
-  List<PlatformFile> _selectedFiles = [];
+  final List<PlatformFile> _selectedFiles = [];
 
   @override
   void initState() {
@@ -203,7 +203,6 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final bcaBlue = const Color(0xFF004D8E);
-    final bcaLightBlue = const Color(0xFF1CB5E0);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F8),
@@ -243,7 +242,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   CircleAvatar(
                     radius: 36,
-                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
                     child: const CircleAvatar(
                       radius: 32,
                       backgroundColor: Colors.white,
@@ -268,7 +267,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   Text(
                     'Account Number: ${_accountNumberController.text}',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 13,
                     ),
                   ),
@@ -286,7 +285,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 8),
                   Card(
                     elevation: 2,
-                    shadowColor: Colors.black.withOpacity(0.05),
+                    shadowColor: Colors.black.withValues(alpha: 0.05),
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.zero,
                     ),
@@ -355,7 +354,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   const SizedBox(height: 8),
                   Card(
                     elevation: 2,
-                    shadowColor: Colors.black.withOpacity(0.05),
+                    shadowColor: Colors.black.withValues(alpha: 0.05),
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.zero,
                     ),
@@ -392,7 +391,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                 style: TextStyle(color: bcaBlue, fontWeight: FontWeight.w600),
                               ),
                               style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: bcaBlue.withOpacity(0.5)),
+                                side: BorderSide(color: bcaBlue.withValues(alpha: 0.5)),
                                 shape: const RoundedRectangleBorder(
                                   borderRadius: BorderRadius.zero,
                                 ),
@@ -500,7 +499,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   // 4. Manage Transactions Shortcut Card
                   Card(
                     elevation: 2,
-                    shadowColor: Colors.black.withOpacity(0.05),
+                    shadowColor: Colors.black.withValues(alpha: 0.05),
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.zero,
                     ),
