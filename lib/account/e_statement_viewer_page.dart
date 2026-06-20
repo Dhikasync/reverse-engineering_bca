@@ -158,6 +158,7 @@ class _EStatementViewerPageState extends State<EStatementViewerPage> {
               Expanded(
                 child: Container(
                   width: double.infinity,
+                  padding: const EdgeInsets.only(top: 20.0),
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.only(

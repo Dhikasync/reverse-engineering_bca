@@ -130,8 +130,18 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<bool> _onWillPop() async {
-    if (!_hasChanges) return true;
+  Future<void> _handleBackNavigation() async {
+    if (!_hasChanges) {
+      if (mounted) {
+        Navigator.pop(context, {
+          'name': _nameController.text,
+          'accountNumber': _accountNumberController.text,
+          'balance': _balanceController.text,
+        });
+      }
+      return;
+    }
+
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -166,12 +176,27 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+
     if (result == 'save') {
       _saveAll();
-      return true;
+      setState(() => _hasChanges = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pop(context, {
+            'name': _nameController.text,
+            'accountNumber': _accountNumberController.text,
+            'balance': _balanceController.text,
+          });
+        }
+      });
+    } else if (result == 'discard') {
+      setState(() => _hasChanges = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      });
     }
-    if (result == 'discard') return true;
-    return false; // cancel
   }
 
   // 1. Fungsi hanya untuk memilih file dan memasukkannya ke daftar tunggu
@@ -354,17 +379,10 @@ class _SettingsPageState extends State<SettingsPage> {
     final bcaBlue = const Color(0xFF004D8E);
 
     return PopScope(
-      canPop: false,
+      canPop: !_hasChanges,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        final shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) {
-          Navigator.of(context).pop({
-            'name': _nameController.text,
-            'accountNumber': _accountNumberController.text,
-            'balance': _balanceController.text,
-          });
-        }
+        await _handleBackNavigation();
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F6F8),
@@ -379,7 +397,7 @@ class _SettingsPageState extends State<SettingsPage> {
           centerTitle: true,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
+            onPressed: _handleBackNavigation,
           ),
         ),
         body: SingleChildScrollView(
