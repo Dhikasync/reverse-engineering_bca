@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:math' as math; // Tambahan untuk kalkulasi putaran animasi
 import 'package:flutter/services.dart' show rootBundle;
 // Import viewer page yang baru dibuat (sesuaikan path-nya jika berbeda)
 import 'package:reverse_engineering_bca/account/e_statement_viewer_page.dart';
@@ -465,32 +466,23 @@ class _EStatementPageState extends State<EStatementPage> {
   }
 
   Future<void> _exportPdf(String selectedPeriod) async {
-    // 1. Tampilkan Dialog Loading agar transisi terasa smooth
+    // 1. Tampilkan Dialog Loading dengan Animasi Sweeping (Mutar & Terputus) tanpa latar belakang putih
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
+        return const Dialog(
+          backgroundColor:
+              Colors.transparent, // Membuat background tembus pandang
           elevation: 0,
           child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF003366)),
-              ),
-            ),
+            child: _AnimatedBCALogo(), // Widget animasi dipanggil langsung
           ),
         );
       },
     );
 
     // 2. Beri waktu sejenak agar UI sempat me-render dialog loading
-    // sebelum thread diblokir oleh proses render PDF yang berat.
     await Future.delayed(const Duration(milliseconds: 150));
 
     try {
@@ -1220,6 +1212,106 @@ class _EStatementPageState extends State<EStatementPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// =======================================================================
+// WIDGET ANIMASI CUSTOM UNTUK LOGO BCA SAAT LOADING
+// =======================================================================
+class _AnimatedBCALogo extends StatefulWidget {
+  const _AnimatedBCALogo({Key? key}) : super(key: key);
+
+  @override
+  __AnimatedBCALogoState createState() => __AnimatedBCALogoState();
+}
+
+class __AnimatedBCALogoState extends State<_AnimatedBCALogo>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // Durasi putaran
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat(); // Menggunakan repeat agar terus berputar ke satu arah
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Kita simpan child berupa gambar ke dalam sebuah variable agar efisien dan bisa dipakai 2x
+    final Widget logoAsset = Image.asset(
+      'assets/images/logo_bca_icon.png', // Menggunakan asset dari Anda
+      width: 80,
+      height: 80,
+      fit: BoxFit.contain,
+    );
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // =================================================================
+            // LAYER 1: Efek potongan "Benar-benar terputus"
+            // =================================================================
+            ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return SweepGradient(
+                  colors: const [
+                    Colors.transparent, // Terputus / Kosong
+                    Colors
+                        .transparent, // Mempertahankan ruang kosong (tanpa bayangan panjang)
+                    Colors.white, // Langsung Solid / Muncul penuh
+                    Colors.white, // Mengisi sisa lingkaran
+                  ],
+                  // Komposisi: 40% kosong (terputus), lalu langsung solid di 45%
+                  stops: const [0.0, 0.4, 0.45, 1.0],
+                  transform: GradientRotation(_controller.value * 2 * math.pi),
+                ).createShader(bounds);
+              },
+              // BlendMode.dstIn HANYA mengambil opacity gradient tanpa mengubah warna asli gambar
+              blendMode: BlendMode.dstIn,
+              child: logoAsset,
+            ),
+
+            // =================================================================
+            // LAYER 2: Sentuhan warna Kuning dan Biru di bagian paling ujung (kepala putaran)
+            // =================================================================
+            ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return SweepGradient(
+                  colors: const [
+                    Colors
+                        .transparent, // Bagian belakang (transparan tidak akan menimpa Layer 1)
+                    Colors.transparent,
+                    Color(0xFF005DAA), // Sentuhan Biru (BCA Blue)
+                    Color(
+                      0xFFF2C94C,
+                    ), // Sentuhan Kuning (BCA Yellow) di paling ujung
+                  ],
+                  // Hanya terlihat di bagian 85% sampai 100% (kepala rotasi)
+                  stops: const [0.0, 0.85, 0.95, 1.0],
+                  transform: GradientRotation(_controller.value * 2 * math.pi),
+                ).createShader(bounds);
+              },
+              // BlendMode.srcIn menimpa persis sesuai bentuk gambar (warna asli tertimpa gradient ini)
+              blendMode: BlendMode.srcIn,
+              child: logoAsset,
+            ),
+          ],
+        );
+      },
     );
   }
 }
