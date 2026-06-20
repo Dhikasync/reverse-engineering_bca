@@ -164,10 +164,10 @@ class _EStatementPageState extends State<EStatementPage> {
     final PdfGraphics graphics = page.graphics;
 
     final PdfFont fontTitle = fontData != null
-        ? PdfTrueTypeFont(fontData, 11, style: PdfFontStyle.bold)
+        ? PdfTrueTypeFont(fontData, 14, style: PdfFontStyle.bold)
         : PdfStandardFont(
             PdfFontFamily.helvetica,
-            11,
+            14,
             style: PdfFontStyle.bold,
           );
     final PdfFont fontBold = fontData != null
@@ -196,11 +196,12 @@ class _EStatementPageState extends State<EStatementPage> {
       PdfFont font,
       Rect bounds, {
       PdfStringFormat? format,
+      PdfPen? customPen,
     }) {
       graphics.drawString(
         text,
         font,
-        pen: textBoldPen,
+        pen: customPen ?? textBoldPen,
         brush: textBoldBrush,
         bounds: bounds,
         format: format ?? PdfStringFormat(characterSpacing: 0.5),
@@ -225,8 +226,9 @@ class _EStatementPageState extends State<EStatementPage> {
     drawBoldString(
       widget.accountTypeDetail.toUpperCase(),
       fontTitle,
-      const Rect.fromLTWH(0.0, 25.0, 595.0, 20.0),
+      const Rect.fromLTWH(0.0, 23.0, 595.0, 25.0),
       format: PdfStringFormat(alignment: PdfTextAlignment.center),
+      customPen: PdfPen(PdfColor(0, 0, 0), width: 1.2),
     );
 
     drawBoldString(
@@ -463,121 +465,150 @@ class _EStatementPageState extends State<EStatementPage> {
   }
 
   Future<void> _exportPdf(String selectedPeriod) async {
-    final provider = Provider.of<TransactionProvider>(context, listen: false);
-    final allTransactions = provider.transactions;
-
-    String getShortMonth(String indonesianMonth) {
-      final m = indonesianMonth.toLowerCase();
-      if (m.contains('jan')) return 'Jan';
-      if (m.contains('feb')) return 'Feb';
-      if (m.contains('mar')) return 'Mar';
-      if (m.contains('apr')) return 'Apr';
-      if (m.contains('mei')) return 'May';
-      if (m.contains('jun')) return 'Jun';
-      if (m.contains('jul')) return 'Jul';
-      if (m.contains('agu')) return 'Aug';
-      if (m.contains('sep')) return 'Sep';
-      if (m.contains('okt')) return 'Oct';
-      if (m.contains('nov')) return 'Nov';
-      if (m.contains('des')) return 'Dec';
-      return '';
-    }
-
-    final periodParts = selectedPeriod.split(' ');
-    String targetMonthIndo = periodParts.isNotEmpty ? periodParts[0] : '';
-    String targetYear = periodParts.length > 1 ? periodParts[1] : '';
-    String targetShortMonth = getShortMonth(targetMonthIndo);
-
-    DateTime parseDate(String dateOrStatus) {
-      final parts = dateOrStatus.split('\n');
-      if (parts.length >= 3) {
-        int day = int.tryParse(parts[0]) ?? 1;
-        int year = int.tryParse(parts[2]) ?? 2025;
-        String m = parts[1].toLowerCase();
-        int month = 1;
-        if (m.contains('jan')) {
-          month = 1;
-        } else if (m.contains('feb')) {
-          month = 2;
-        } else if (m.contains('mar')) {
-          month = 3;
-        } else if (m.contains('apr')) {
-          month = 4;
-        } else if (m.contains('may') || m.contains('mei')) {
-          month = 5;
-        } else if (m.contains('jun')) {
-          month = 6;
-        } else if (m.contains('jul')) {
-          month = 7;
-        } else if (m.contains('aug') || m.contains('agu')) {
-          month = 8;
-        } else if (m.contains('sep')) {
-          month = 9;
-        } else if (m.contains('oct') || m.contains('okt')) {
-          month = 10;
-        } else if (m.contains('nov')) {
-          month = 11;
-        } else if (m.contains('dec') || m.contains('des')) {
-          month = 12;
-        }
-        return DateTime(year, month, day);
-      }
-      return DateTime(2000);
-    }
-
-    List<TransactionModel> chronologicalTransactions = List.from(
-      allTransactions,
+    // 1. Tampilkan Dialog Loading agar transisi terasa smooth
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF003366)),
+              ),
+            ),
+          ),
+        );
+      },
     );
-    if (chronologicalTransactions.isNotEmpty) {
-      DateTime firstDate = parseDate(
-        chronologicalTransactions.first.dateOrStatus,
-      );
-      DateTime lastDate = parseDate(
-        chronologicalTransactions.last.dateOrStatus,
-      );
-      if (firstDate.isAfter(lastDate)) {
-        chronologicalTransactions = chronologicalTransactions.reversed.toList();
-      }
-    }
 
-    double runningBalance = provider.startingBalance;
-    List<TransactionModel> targetTransactions = [];
-    double startingBalanceForMonth = runningBalance;
-    bool foundTargetMonth = false;
-
-    for (var tx in chronologicalTransactions) {
-      final parts = tx.dateOrStatus.split('\n');
-      if (parts.length >= 3) {
-        String txMonth = parts[1];
-        String txYear = parts[2];
-
-        bool isTargetMonth =
-            txMonth.toLowerCase() == targetShortMonth.toLowerCase() &&
-            txYear == targetYear;
-
-        if (isTargetMonth && !foundTargetMonth) {
-          foundTargetMonth = true;
-          startingBalanceForMonth = runningBalance;
-        }
-
-        if (isTargetMonth) {
-          targetTransactions.add(tx);
-        }
-      }
-
-      String rawAmount = tx.amount
-          .replaceAll('IDR', '')
-          .replaceAll(',', '')
-          .trim();
-      double amount = double.tryParse(rawAmount) ?? 0.0;
-      if (tx.isDebit) {
-        runningBalance -= amount;
-      } else {
-        runningBalance += amount;
-      }
-    }
+    // 2. Beri waktu sejenak agar UI sempat me-render dialog loading
+    // sebelum thread diblokir oleh proses render PDF yang berat.
+    await Future.delayed(const Duration(milliseconds: 150));
 
     try {
+      final provider = Provider.of<TransactionProvider>(context, listen: false);
+      final allTransactions = provider.transactions;
+
+      String getShortMonth(String indonesianMonth) {
+        final m = indonesianMonth.toLowerCase();
+        if (m.contains('jan')) return 'Jan';
+        if (m.contains('feb')) return 'Feb';
+        if (m.contains('mar')) return 'Mar';
+        if (m.contains('apr')) return 'Apr';
+        if (m.contains('mei')) return 'May';
+        if (m.contains('jun')) return 'Jun';
+        if (m.contains('jul')) return 'Jul';
+        if (m.contains('agu')) return 'Aug';
+        if (m.contains('sep')) return 'Sep';
+        if (m.contains('okt')) return 'Oct';
+        if (m.contains('nov')) return 'Nov';
+        if (m.contains('des')) return 'Dec';
+        return '';
+      }
+
+      final periodParts = selectedPeriod.split(' ');
+      String targetMonthIndo = periodParts.isNotEmpty ? periodParts[0] : '';
+      String targetYear = periodParts.length > 1 ? periodParts[1] : '';
+      String targetShortMonth = getShortMonth(targetMonthIndo);
+
+      DateTime parseDate(String dateOrStatus) {
+        final parts = dateOrStatus.split('\n');
+        if (parts.length >= 3) {
+          int day = int.tryParse(parts[0]) ?? 1;
+          int year = int.tryParse(parts[2]) ?? 2025;
+          String m = parts[1].toLowerCase();
+          int month = 1;
+          if (m.contains('jan')) {
+            month = 1;
+          } else if (m.contains('feb')) {
+            month = 2;
+          } else if (m.contains('mar')) {
+            month = 3;
+          } else if (m.contains('apr')) {
+            month = 4;
+          } else if (m.contains('may') || m.contains('mei')) {
+            month = 5;
+          } else if (m.contains('jun')) {
+            month = 6;
+          } else if (m.contains('jul')) {
+            month = 7;
+          } else if (m.contains('aug') || m.contains('agu')) {
+            month = 8;
+          } else if (m.contains('sep')) {
+            month = 9;
+          } else if (m.contains('oct') || m.contains('okt')) {
+            month = 10;
+          } else if (m.contains('nov')) {
+            month = 11;
+          } else if (m.contains('dec') || m.contains('des')) {
+            month = 12;
+          }
+          return DateTime(year, month, day);
+        }
+        return DateTime(2000);
+      }
+
+      List<TransactionModel> chronologicalTransactions = List.from(
+        allTransactions,
+      );
+      if (chronologicalTransactions.isNotEmpty) {
+        DateTime firstDate = parseDate(
+          chronologicalTransactions.first.dateOrStatus,
+        );
+        DateTime lastDate = parseDate(
+          chronologicalTransactions.last.dateOrStatus,
+        );
+        if (firstDate.isAfter(lastDate)) {
+          chronologicalTransactions = chronologicalTransactions.reversed
+              .toList();
+        }
+      }
+
+      double runningBalance = provider.startingBalance;
+      List<TransactionModel> targetTransactions = [];
+      double startingBalanceForMonth = runningBalance;
+      bool foundTargetMonth = false;
+
+      for (var tx in chronologicalTransactions) {
+        final parts = tx.dateOrStatus.split('\n');
+        if (parts.length >= 3) {
+          String txMonth = parts[1];
+          String txYear = parts[2];
+
+          bool isTargetMonth =
+              txMonth.toLowerCase() == targetShortMonth.toLowerCase() &&
+              txYear == targetYear;
+
+          if (isTargetMonth && !foundTargetMonth) {
+            foundTargetMonth = true;
+            startingBalanceForMonth = runningBalance;
+          }
+
+          if (isTargetMonth) {
+            targetTransactions.add(tx);
+          }
+        }
+
+        String rawAmount = tx.amount
+            .replaceAll('IDR', '')
+            .replaceAll(',', '')
+            .trim();
+        double amount = double.tryParse(rawAmount) ?? 0.0;
+        if (tx.isDebit) {
+          runningBalance -= amount;
+        } else {
+          runningBalance += amount;
+        }
+      }
+
       final PdfDocument document = PdfDocument();
       document.pageSettings.size = PdfPageSize.a4;
       document.pageSettings.margins.all = 0;
@@ -894,8 +925,11 @@ class _EStatementPageState extends State<EStatementPage> {
 
       if (!mounted) return;
 
+      // 3. TUTUP DIALOG LOADING
+      Navigator.pop(context);
+
       // =======================================================================
-      // ALUR NAVIGASI KE VIEWER PAGE (Menggantikan Share System Bawaan)
+      // ALUR NAVIGASI KE VIEWER PAGE
       // =======================================================================
       DateTime statementDate = _parsePeriodToDate(selectedPeriod);
 
@@ -911,6 +945,8 @@ class _EStatementPageState extends State<EStatementPage> {
       );
     } catch (e) {
       if (mounted) {
+        // Jangan lupa tutup dialog loading jika ternyata terjadi error
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load PDF viewer: $e')),
         );
