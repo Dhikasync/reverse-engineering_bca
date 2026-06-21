@@ -741,13 +741,15 @@ class _EStatementPageState extends State<EStatementPage> {
             ? leftLines.length
             : rightLines.length;
         if (maxLines == 0) maxLines = 1;
-        double rowHeight = 12.0 * maxLines + 5.0;
+        // Mengurangi sedikit padding antar baris agar muat lebih banyak transaksi (menyesuaikan format asli)
+        double rowHeight = 12.0 * maxLines + 3.0;
 
-        if (currentY + rowHeight > 755.0) {
+        // Memaksimalkan margin bawah hingga 780.0 (sebelumnya 755.0)
+        if (currentY + rowHeight > 780.0) {
           currentPage.graphics.drawString(
             'Bersambung ke halaman berikut',
             fontItalic,
-            bounds: const Rect.fromLTWH(25.0, 780.0, 540.0, 10.0),
+            bounds: const Rect.fromLTWH(25.0, 800.0, 540.0, 10.0),
             format: PdfStringFormat(alignment: PdfTextAlignment.right),
           );
           currentPage = document.pages.add();
@@ -805,11 +807,11 @@ class _EStatementPageState extends State<EStatementPage> {
       }
 
       double summaryHeight = 80.0;
-      if (currentY + summaryHeight > 755.0) {
+      if (currentY + summaryHeight > 780.0) {
         currentPage.graphics.drawString(
           'Bersambung ke halaman berikut',
           fontItalic,
-          bounds: const Rect.fromLTWH(25.0, 780.0, 540.0, 10.0),
+          bounds: const Rect.fromLTWH(25.0, 800.0, 540.0, 10.0),
           format: PdfStringFormat(alignment: PdfTextAlignment.right),
         );
         currentPage = document.pages.add();
