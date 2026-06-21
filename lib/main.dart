@@ -5,12 +5,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:reverse_engineering_bca/providers/transaction_provider.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  final transactionProvider = TransactionProvider();
+  await transactionProvider.loadData();
+  
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider.value(value: transactionProvider),
       ],
       child: const MyBcaCloneApp(),
     ),

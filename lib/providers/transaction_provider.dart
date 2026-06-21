@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/transaction.dart';
 import '../services/pdf_parser_service.dart';
 
@@ -10,14 +12,15 @@ class TransactionProvider with ChangeNotifier {
 
   double _startingBalance = 734147.95;
 
-  String _branch = "KCP PERAK";
-  List<String> _address = [
-    "TANDES",
-    "RT005 RW006 JAWA TIMUR",
-    "GADEL TENGAH II NO 05",
-    "SURABAYA 60186",
-    "INDONESIA",
-  ];
+  String _branch = '';
+  String _accountType = 'REKENING TAHAPAN';
+  List<String> _address = [];
+
+  String _userName = 'Default';
+  String _accountNumber = '0240219280';
+  String _balance = '154830048';
+
+  Map<String, double> _monthlyStartingBalances = {};
 
   // Always returns transactions sorted newest-first, regardless of internal order
   List<TransactionModel> get transactions {
@@ -31,7 +34,25 @@ class TransactionProvider with ChangeNotifier {
   String get activeYear => _activeYear;
   double get startingBalance => _startingBalance;
   String get branch => _branch;
+  String get accountType => _accountType;
   List<String> get address => _address;
+
+  String get userName => _userName;
+  String get accountNumber => _accountNumber;
+  String get balance => _balance;
+
+  void setUserProfile(String name, String accountNum, String bal) {
+    _userName = name;
+    _accountNumber = accountNum;
+    _balance = bal;
+    notifyListeners();
+    saveData();
+  }
+  
+  double getStartingBalanceForMonth(String month, String year) {
+    String indoMonth = _mapMonthToIndonesian(month);
+    return _monthlyStartingBalances["$indoMonth $year"] ?? _startingBalance;
+  }
 
   // Helper: Indonesian month name to number (for sorting)
   static const Map<String, int> _monthOrder = {
@@ -92,7 +113,7 @@ class TransactionProvider with ChangeNotifier {
   // Computed getter: always derived from actual transactions, deduplicated & sorted newest first
   List<String> get uploadedMonths {
     if (_transactions.isEmpty) {
-      return ["Agustus 2023", "Juli 2023", "Juni 2023"];
+      return [];
     }
 
     // Collect unique periods directly from current transactions
@@ -162,15 +183,23 @@ class TransactionProvider with ChangeNotifier {
     List<TransactionModel> newTransactions,
     String pdfMonth,
     String pdfYear,
+    [Map<String, double>? newMonthlyBalances]
   ) {
     _activeMonth = pdfMonth;
     _activeYear = pdfYear;
     _transactions.addAll(newTransactions);
 
-    // Jangan overwrite starting balance jika menggabungkan data,
-    // kecuali ini upload pertama kali
+    // Jangan overwrite starting balance utama jika menggabungkan data
     if (_transactions.length == newTransactions.length) {
-      _startingBalance = PdfParserService.detectedStartingBalance;
+      if (newMonthlyBalances != null && newMonthlyBalances.isNotEmpty) {
+        _startingBalance = newMonthlyBalances.values.first;
+      } else {
+        _startingBalance = PdfParserService.detectedStartingBalance;
+      }
+    }
+    
+    if (newMonthlyBalances != null) {
+      _monthlyStartingBalances.addAll(newMonthlyBalances);
     }
 
     if (PdfParserService.detectedBranch.isNotEmpty) {
@@ -178,6 +207,9 @@ class TransactionProvider with ChangeNotifier {
     }
     if (PdfParserService.detectedAddress.isNotEmpty) {
       _address = List.from(PdfParserService.detectedAddress);
+    }
+    if (PdfParserService.detectedAccountType.isNotEmpty) {
+      _accountType = PdfParserService.detectedAccountType;
     }
 
     _sortTransactions(); // Urutkan setelah setiap upload
@@ -194,15 +226,33 @@ class TransactionProvider with ChangeNotifier {
     if (PdfParserService.detectedAddress.isNotEmpty) {
       _address = List.from(PdfParserService.detectedAddress);
     }
+    if (PdfParserService.detectedAccountType.isNotEmpty) {
+      _accountType = PdfParserService.detectedAccountType;
+    }
 
     _sortTransactions(); // Urutkan setelah set
     notifyListeners();
+    saveData();
+  }
+
+  void setBranchAndAddress(String branch, List<String> address) {
+    _branch = branch.toUpperCase();
+    _address = address.map((l) => l.toUpperCase()).toList();
+    notifyListeners();
+    saveData();
+  }
+
+  void setAccountType(String accountType) {
+    _accountType = accountType.toUpperCase();
+    notifyListeners();
+    saveData();
   }
 
   void addTransaction(TransactionModel transaction) {
     _transactions.add(transaction);
     _sortTransactions(); // Urutkan setelah tambah
     notifyListeners();
+    saveData();
   }
 
   void updateTransaction(int index, TransactionModel updatedTransaction) {
@@ -210,6 +260,7 @@ class TransactionProvider with ChangeNotifier {
       _transactions[index] = updatedTransaction;
       _sortTransactions(); // Urutkan ulang setelah edit (mencegah duplikat header & urutan salah)
       notifyListeners();
+      saveData();
     }
   }
 
@@ -217,24 +268,78 @@ class TransactionProvider with ChangeNotifier {
     if (index >= 0 && index < _transactions.length) {
       _transactions.removeAt(index);
       notifyListeners();
+      saveData();
     }
   }
 
   void clearTransactions() {
     _transactions.clear();
-    _activeMonth = "";
-    _activeYear = "";
-    PdfParserService.detectedMonth = "";
-    PdfParserService.detectedYear = "";
+    _activeMonth = '';
+    _activeYear = '';
+    PdfParserService.detectedMonth = '';
+    PdfParserService.detectedYear = '';
+    _monthlyStartingBalances.clear();
+    // Do NOT reset branch/address — user set those manually
+    notifyListeners();
+    saveData();
+  }
 
-    _branch = "KCP PERAK";
-    _address = [
-      "ASEMROWO",
-      "RT005 RW006 JAWA TIMUR",
-      "MANGGA 2",
-      "SURABAYA 60187",
-      "INDONESIA",
-    ];
+  // --- PERSISTENCE LOGIC (shared_preferences) ---
+  Future<void> saveData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Save settings
+    prefs.setString('branch', _branch);
+    prefs.setStringList('address', _address);
+    prefs.setString('accountType', _accountType);
+    prefs.setDouble('startingBalance', _startingBalance);
+    prefs.setString('userName', _userName);
+    prefs.setString('accountNumber', _accountNumber);
+    prefs.setString('balance', _balance);
+    
+    // Save monthly starting balances map (serialize as JSON)
+    prefs.setString('monthlyStartingBalances', jsonEncode(_monthlyStartingBalances));
+
+    // Save transactions (serialize list to JSON string)
+    final String transactionsJson = jsonEncode(_transactions.map((tx) => tx.toJson()).toList());
+    prefs.setString('transactions', transactionsJson);
+  }
+
+  Future<void> loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Load settings
+    _branch = prefs.getString('branch') ?? '';
+    _address = prefs.getStringList('address') ?? [];
+    _accountType = prefs.getString('accountType') ?? 'REKENING TAHAPAN';
+    _startingBalance = prefs.getDouble('startingBalance') ?? 734147.95;
+    _userName = prefs.getString('userName') ?? 'Default';
+    _accountNumber = prefs.getString('accountNumber') ?? '0240219280';
+    _balance = prefs.getString('balance') ?? '154830048';
+    
+    // Load monthly starting balances map
+    final String? monthlyBalancesJson = prefs.getString('monthlyStartingBalances');
+    if (monthlyBalancesJson != null) {
+      try {
+        final decoded = jsonDecode(monthlyBalancesJson) as Map<String, dynamic>;
+        _monthlyStartingBalances = decoded.map((key, value) => MapEntry(key, (value as num).toDouble()));
+      } catch (e) {
+        debugPrint("Error parsing monthly balances: $e");
+      }
+    }
+
+    // Load transactions
+    final String? transactionsJson = prefs.getString('transactions');
+    if (transactionsJson != null) {
+      try {
+        final List<dynamic> decoded = jsonDecode(transactionsJson);
+        _transactions = decoded.map((item) => TransactionModel.fromJson(item)).toList();
+        _sortTransactions();
+      } catch (e) {
+        debugPrint("Error parsing transactions: $e");
+      }
+    }
+    
     notifyListeners();
   }
 }
