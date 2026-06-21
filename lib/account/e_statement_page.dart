@@ -241,7 +241,7 @@ class _EStatementPageState extends State<EStatementPage> {
         characterSpacing: 1.2,
       ),
       // Anda bisa mengatur ketebalan judul laporan (TAHAPAN BCA, dll) di sini:
-      customPen: PdfPen(PdfColor(0, 0, 0), width: 0.4),
+      customPen: PdfPen(PdfColor(0, 0, 0), width: 0.3),
     );
 
     // Font khusus KCP/KCU yang ukurannya lebih kecil (ukuran 6, defaultnya 7)
@@ -275,6 +275,8 @@ class _EStatementPageState extends State<EStatementPage> {
       widget.userName.toUpperCase(),
       fontBold,
       Rect.fromLTWH(textLeftX, textLeftY, 240.0, 10.0),
+      // Anda bisa mengatur khusus ketebalan Nama Nasabah di sini
+      customPen: PdfPen(PdfColor(0, 0, 0), width: 0.1),
     );
 
     for (int i = 0; i < provider.address.length; i++) {
@@ -283,6 +285,8 @@ class _EStatementPageState extends State<EStatementPage> {
         provider.address[i],
         fontBold,
         Rect.fromLTWH(textLeftX, textLeftY, 240.0, 10.0),
+        // Anda bisa mengatur khusus ketebalan Alamat Nasabah di sini
+        customPen: PdfPen(PdfColor(0, 0, 0), width: 0.1),
       );
     }
 
@@ -692,7 +696,19 @@ class _EStatementPageState extends State<EStatementPage> {
 
       currentY += 16.0;
 
-      for (var t in targetTransactions) {
+      for (int i = 0; i < targetTransactions.length; i++) {
+        var t = targetTransactions[i];
+        
+        bool isLastOnDate = true;
+        if (i < targetTransactions.length - 1) {
+          var nextT = targetTransactions[i + 1];
+          String currentDateStr = _formatDateForPdf(t.dateOrStatus);
+          String nextDateStr = _formatDateForPdf(nextT.dateOrStatus);
+          if (currentDateStr == nextDateStr) {
+            isLastOnDate = false;
+          }
+        }
+
         String rawAmount = t.amount
             .replaceAll('IDR', '')
             .replaceAll(',', '')
@@ -776,12 +792,14 @@ class _EStatementPageState extends State<EStatementPage> {
           );
         }
 
-        currentPage.graphics.drawString(
-          formatCurrency(currentBalance),
-          fontRegular,
-          bounds: Rect.fromLTWH(460.0, currentY, 105.0, 10.0),
-          format: PdfStringFormat(alignment: PdfTextAlignment.right),
-        );
+        if (isLastOnDate) {
+          currentPage.graphics.drawString(
+            formatCurrency(currentBalance),
+            fontRegular,
+            bounds: Rect.fromLTWH(460.0, currentY, 105.0, 10.0),
+            format: PdfStringFormat(alignment: PdfTextAlignment.right),
+          );
+        }
 
         currentY += rowHeight;
       }
