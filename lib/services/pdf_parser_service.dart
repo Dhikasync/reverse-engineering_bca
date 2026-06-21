@@ -41,9 +41,7 @@ class PdfParserService {
       );
 
       // Extract full text WITH layout for transaction parsing
-      String text = PdfTextExtractor(
-        document,
-      ).extractText(layoutText: true);
+      String text = PdfTextExtractor(document).extractText(layoutText: true);
 
       // Extract page 1 WITHOUT layout to get header info (branch, address, name)
       // layoutText:false gives plain text without positional spaces
@@ -186,9 +184,15 @@ class PdfParserService {
 
       // Fix OCR/Extraction issues where layoutText: true fails to add spaces between distant columns
       // 1. Missing space between two amounts: 4,500,000.0032,445,580.65 -> 4,500,000.00 32,445,580.65
-      text = text.replaceAllMapped(RegExp(r'(\.\d{2})(\d)'), (m) => '${m.group(1)} ${m.group(2)}');
+      text = text.replaceAllMapped(
+        RegExp(r'(\.\d{2})(\d)'),
+        (m) => '${m.group(1)} ${m.group(2)}',
+      );
       // 2. Missing space after date at start of line: 03/04TRSF -> 03/04 TRSF
-      text = text.replaceAllMapped(RegExp(r'^(\d{2}/\d{2})([A-Z])', multiLine: true), (m) => '${m.group(1)} ${m.group(2)}');
+      text = text.replaceAllMapped(
+        RegExp(r'^(\d{2}/\d{2})([A-Z])', multiLine: true),
+        (m) => '${m.group(1)} ${m.group(2)}',
+      );
 
       final lines = text.split('\n');
       final RegExp dateRegex = RegExp(r'^(\d{2}/\d{2})');
@@ -288,22 +292,26 @@ class PdfParserService {
             if (!isDebit) {
               String upperTitle = title.toUpperCase();
 
-              // Cek DB/CR di akhir baris (spasi atau newline sebelum DB)
-              if (RegExp(r'(?:\n|\s{2,})DB\b\s*$').hasMatch(upperTitle)) {
+              // PRIORITAS PALING TINGGI: label transaksi itu sendiri sudah menyatakan jenisnya
+              if (upperTitle.contains('TRANSAKSI DEBIT')) {
                 isDebit = true;
+              } else if (upperTitle.contains('TRANSAKSI KREDIT')) {
+                isDebit = false;
               }
-              // Cek kredit (CR) — pastikan tidak dianggap debit
-              else if (RegExp(r'(?:\n|\s{2,})CR\b\s*$').hasMatch(upperTitle) ||
+              // Cek DB/CR di akhir baris (spasi atau newline sebelum DB)
+              else if (RegExp(r'(?:\n|\s{2,})DB\b\s*$').hasMatch(upperTitle)) {
+                isDebit = true;
+              } else if (RegExp(
+                    r'(?:\n|\s{2,})CR\b\s*$',
+                  ).hasMatch(upperTitle) ||
                   upperTitle.contains('TRSF E-BANKING CR') ||
                   upperTitle.contains('BI-FAST CR') ||
-                  upperTitle.contains('SETORAN VIA CDM') || // ← TAMBAH
-                  upperTitle.contains('SETORAN TUNAI') || // ← TAMBAH
-                  upperTitle.contains('KR OTOMATIS') || // ← TAMBAH
+                  upperTitle.contains('SETORAN VIA CDM') ||
+                  upperTitle.contains('SETORAN TUNAI') ||
+                  upperTitle.contains('KR OTOMATIS') ||
                   upperTitle.contains('SWITCHING CR')) {
-                isDebit = false; // eksplisit kredit
-              }
-              // Cek debit
-              else if (upperTitle.contains('TARIKAN ATM') ||
+                isDebit = false;
+              } else if (upperTitle.contains('TARIKAN ATM') ||
                   upperTitle.contains('BIAYA ADM') ||
                   upperTitle.contains('PAJAK BUNGA') ||
                   upperTitle.contains('BIAYA KARTU') ||
@@ -311,9 +319,8 @@ class PdfParserService {
                   upperTitle.contains('TRSF E-BANKING DB') ||
                   upperTitle.contains('BI-FAST DB') ||
                   upperTitle.contains('SWITCHING DB') ||
-                  upperTitle.contains('KOR. DEBET') || // ← TAMBAH
+                  upperTitle.contains('KOR. DEBET') ||
                   upperTitle.contains('KOREKSI DEBET')) {
-                // ← TAMBAH
                 isDebit = true;
               }
             }
@@ -434,14 +441,20 @@ class PdfParserService {
 
         if (dateRegex.hasMatch(line)) {
           bool hasAmount = currentBlock.any((l) => amountRegex.hasMatch(l));
-          
-          bool isKnownPrefix = RegExp(r'^(\d{2}/\d{2})\s+('
+
+          bool isKnownPrefix = RegExp(
+            r'^(\d{2}/\d{2})\s+('
             r'TRSF E-BANKING|BI-FAST|SETORAN|TARIKAN|SWITCHING|BIAYA|PAJAK|BUNGA|PEND KARTU|SALDO|KOR\.|KOREKSI|KR OTOMATIS|PEMBELIAN|PEMBAYARAN|TRANSAKSI'
-            r')', caseSensitive: false).hasMatch(line);
+            r')',
+            caseSensitive: false,
+          ).hasMatch(line);
 
           bool isExactlyDate = RegExp(r'^\d{2}/\d{2}$').hasMatch(line.trim());
 
-          if (currentBlock.isEmpty || hasAmount || isKnownPrefix || isExactlyDate) {
+          if (currentBlock.isEmpty ||
+              hasAmount ||
+              isKnownPrefix ||
+              isExactlyDate) {
             if (currentBlock.isNotEmpty) {
               processBlock();
             }
