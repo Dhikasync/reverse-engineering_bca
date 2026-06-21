@@ -1,7 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'dart:async';
+import 'package:flutter/services.dart';
+import 'package:flutter/cupertino.dart';
+import '../providers/transaction_provider.dart';
+
+// --- IMPORT FILE HALAMAN BARU ---
+import 'e_statement_page.dart';
 
 class AccountInformationPage extends StatefulWidget {
-  const AccountInformationPage({Key? key}) : super(key: key);
+  final String accountNumber;
+  final String balance;
+  final bool isBalanceVisible;
+  final String userName;
+
+  const AccountInformationPage({
+    super.key,
+    required this.accountNumber,
+    required this.balance,
+    required this.isBalanceVisible,
+    required this.userName,
+  });
 
   @override
   State<AccountInformationPage> createState() => _AccountInformationPageState();
@@ -10,15 +30,27 @@ class AccountInformationPage extends StatefulWidget {
 class _AccountInformationPageState extends State<AccountInformationPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isLoading = true; // State penanda loading
+  late ScrollController _scrollController;
+  late ScrollController _transactionScrollController;
+  double _scrollOffset = 0.0;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Menginisialisasi TabController untuk 3 tab
     _tabController = TabController(length: 3, vsync: this);
 
-    // Simulasi pengambilan data (Loading selama 2 detik)
+    _scrollController = ScrollController();
+    _scrollController.addListener(() {
+      if (_scrollController.hasClients) {
+        setState(() {
+          _scrollOffset = _scrollController.offset;
+        });
+      }
+    });
+
+    _transactionScrollController = ScrollController();
+
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
@@ -31,416 +63,845 @@ class _AccountInformationPageState extends State<AccountInformationPage>
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
+    _transactionScrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    double scrollProgress = (_scrollOffset / 108.0).clamp(0.0, 1.0);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Warna dasar abu-abu terang
+      backgroundColor: const Color(0xFFF5F7FA),
       body: Stack(
         children: [
           // 1. Background Biru Bertekstur
-          _buildBlueBackground(),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 350,
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+          ),
 
+          // 2. Nested Scroll View
           SafeArea(
-            bottom:
-                false, // Membiarkan container putih memanjang sampai bawah layar
-            child: Column(
-              children: [
-                // 2. Custom App Bar
-                _buildAppBar(context),
+            bottom: false,
+            child: NestedScrollView(
+              controller: _scrollController,
+              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+                Color appBarColor =
+                    (innerBoxIsScrolled || scrollProgress == 1.0)
+                    ? const Color(0xFF004D8E)
+                    : Color.lerp(
+                        Colors.transparent,
+                        const Color(0xFF004D8E),
+                        scrollProgress,
+                      )!;
 
-                // 3. Account Card Information
-                const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 12.0,
-                  ),
-                  child: AccountInfoCard(),
-                ),
-
-                // 4. Container Putih Bottom Sheet
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
+                return <Widget>[
+                  // App Bar
+                  SliverAppBar(
+                    backgroundColor: appBarColor,
+                    elevation: 0.0,
+                    pinned: true,
+                    centerTitle: false,
+                    leading: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white,
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    title: Text(
+                      'Account Information',
+                      style: GoogleFonts.openSans(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        // 5. Tab Bar
-                        _buildTabBar(),
+                  ),
 
-                        // 6. Search & Filter Bar
-                        _buildSearchAndFilter(),
+                  // Account Info Card
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _AccountCardDelegate(
+                      accountNumber: widget.accountNumber,
+                      balance: widget.balance,
+                      isBalanceVisible: widget.isBalanceVisible,
+                      innerBoxIsScrolled: innerBoxIsScrolled,
+                    ),
+                  ),
 
-                        // 7. TabBarView untuk konten tiap tab
-                        Expanded(
-                          child: TabBarView(
+                  // Tab Bar
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _StickyTabBarDelegate(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                          border: Border(
+                            bottom: BorderSide(
+                              color: Color(0xFFEEEEEE),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                          child: TabBar(
                             controller: _tabController,
-                            children: [
-                              _buildTransactionList(),
-                              const Center(child: Text('Card Information')),
-                              const Center(child: Text('Pocket Information')),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12.0,
+                            ),
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            labelPadding: const EdgeInsets.symmetric(
+                              horizontal: 2.0,
+                            ),
+                            labelColor: const Color(0xFF00529C),
+                            unselectedLabelColor: Colors.grey.shade500,
+                            indicatorColor: const Color(0xFF00529C),
+                            indicatorWeight: 3,
+                            labelStyle: GoogleFonts.openSans(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                            unselectedLabelStyle: GoogleFonts.openSans(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                            tabs: const [
+                              Tab(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('Account Transactions'),
+                                ),
+                              ),
+                              Tab(text: 'Card'),
+                              Tab(text: 'Pocket'),
                             ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
+
+                  // Search, Export & Filter Bar (Pinned to stay sticky below TabBar)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SearchFilterDelegate(
+                      child: _buildSearchAndFilter(),
+                    ),
+                  ),
+                ];
+              },
+              body: Container(
+                color: Colors.white,
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildTransactionList(),
+                    Center(
+                      child: Text(
+                        'Card Information',
+                        style: GoogleFonts.openSans(),
+                      ),
+                    ),
+                    Center(
+                      child: Text(
+                        'Pocket Information',
+                        style: GoogleFonts.openSans(),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  // --- Komponen Internal Halaman ---
-
-  Widget _buildBlueBackground() {
-    return Container(
-      height: 350,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF004B87), // Biru gelap
-            Color(0xFF0066B3), // Biru agak terang
-            Color(0xFF003366), // Biru sangat gelap (menambah dimensi)
-          ],
-          stops: [0.0, 0.5, 1.0],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-            onPressed: () {
-              // Kembali ke halaman Dashboard
-              Navigator.pop(context);
-            },
-          ),
-          const Text(
-            'Account Information',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabBar() {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
-      ),
-      child: TabBar(
-        controller: _tabController,
-        labelColor: const Color(0xFF00529C),
-        unselectedLabelColor: Colors.grey.shade500,
-        indicatorColor: const Color(0xFF00529C),
-        indicatorWeight: 3,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.normal,
-          fontSize: 13,
-        ),
-        tabs: const [
-          Tab(text: 'Account Transactions'),
-          Tab(text: 'Card'),
-          Tab(text: 'Pocket'),
         ],
       ),
     );
   }
 
   Widget _buildSearchAndFilter() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 12),
+                    Icon(Icons.search, color: Colors.grey.shade500, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Search',
+                      style: GoogleFonts.openSans(color: Colors.grey.shade400),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // --- PERUBAHAN NAVIGASI HALAMAN E-STATEMENT DI SINI ---
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) {
+                      final provider = Provider.of<TransactionProvider>(
+                        context,
+                        listen: false,
+                      );
+                      return EStatementPage(
+                        userName: widget.userName,
+                        accountNumber: widget.accountNumber,
+                        balance: widget.balance,
+                        accountTypeDetail: provider.accountType,
+                      );
+                    },
+                  ),
+                );
+              },
+              child: Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.receipt_long,
+                  color: Colors.grey.shade700,
+                  size: 20,
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 8),
+            Container(
               height: 40,
+              width: 40,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 12),
-                  Icon(Icons.search, color: Colors.grey.shade500, size: 20),
-                  const SizedBox(width: 8),
-                  Text('Search', style: TextStyle(color: Colors.grey.shade400)),
-                ],
+              child: Icon(
+                Icons.filter_alt_outlined,
+                color: Colors.grey.shade700,
+                size: 20,
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.receipt_long,
-              color: Colors.grey.shade700,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            height: 40,
-            width: 40,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.filter_alt_outlined,
-              color: Colors.grey.shade700,
-              size: 20,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTransactionList() {
-    // Merender skeleton jika data masih dimuat
     if (_isLoading) {
       return ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        itemCount: 6, // Jumlah skeleton
+        itemCount: 6,
         itemBuilder: (context, index) => const SkeletonTransactionTile(),
       );
     }
 
-    // Merender data asli jika selesai dimuat
-    return ListView(
+    final provider = Provider.of<TransactionProvider>(context);
+    final transactions = provider.transactions;
+
+    if (transactions.isEmpty) {
+      return Center(
+        child: Text(
+          'No transactions.\nUpload e-Statement in Settings.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.openSans(color: Colors.grey),
+        ),
+      );
+    }
+
+    String mapMonthToEnglish(String monthShort) {
+      switch (monthShort.toLowerCase()) {
+        case 'jan':
+          return 'January';
+        case 'feb':
+          return 'February';
+        case 'mar':
+          return 'March';
+        case 'apr':
+          return 'April';
+        case 'may':
+        case 'mei':
+          return 'May';
+        case 'jun':
+          return 'June';
+        case 'jul':
+          return 'July';
+        case 'aug':
+        case 'agu':
+          return 'August';
+        case 'sep':
+          return 'September';
+        case 'oct':
+        case 'okt':
+          return 'October';
+        case 'nov':
+          return 'November';
+        case 'dec':
+        case 'des':
+          return 'December';
+        default:
+          return monthShort;
+      }
+    }
+
+    return ListView.builder(
+      controller: _transactionScrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      children: const [
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: 8.0),
-          child: Text(
-            'June',
-            style: TextStyle(
-              color: Color(0xFF003366),
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ),
-        TransactionTile(
-          dateOrStatus: 'PEND',
-          title: 'TGL: 0606 QR 914 00000.00DIGAWA cof',
-          subtitle: 'TRANSAKSI DEBIT',
-          amount: 'IDR 20,000.00',
-          isDebit: true,
-        ),
-        TransactionTile(
-          dateOrStatus: 'PEND',
-          title: 'TGL: 0606 QR 014 00000.00HHB H05 PA',
-          subtitle: 'TRANSAKSI DEBIT',
-          amount: 'IDR 66,000.00',
-          isDebit: true,
-        ),
-        TransactionTile(
-          dateOrStatus: 'PEND',
-          title: '0606/FTSCY/WS95271 85000.00\nRAMADHAN SETIAWAN',
-          subtitle: 'TRSF E-BANKING DB',
-          amount: 'IDR 85,000.00',
-          isDebit: true,
-        ),
-        TransactionTile(
-          dateOrStatus: 'PEND',
-          title: 'TGL: 0606 QR 009 00000.00SSB Cab Te',
-          subtitle: 'TRANSAKSI DEBIT',
-          amount: 'IDR 15,500.00',
-          isDebit: true,
-        ),
-        TransactionTile(
-          dateOrStatus: '05\nJun',
-          title: 'BIAYA TXN KE 535 RIDHO ADHA MAULANA\nMyBCA',
-          subtitle: 'BI FAST DB',
-          amount: 'IDR 2,500.00',
-          isDebit: true,
-        ),
-      ],
+      itemCount: transactions.length,
+      itemBuilder: (context, index) {
+        final tx = transactions[index];
+        bool showHeader = false;
+        String displayMonth = "";
+
+        List<String> parts = tx.dateOrStatus.split('\n');
+        if (parts.length >= 3) {
+          String monthShort = parts[1];
+          String engMonth = mapMonthToEnglish(monthShort);
+          displayMonth = engMonth;
+
+          if (index == 0) {
+            showHeader = true;
+          } else {
+            final prevTx = transactions[index - 1];
+            List<String> prevParts = prevTx.dateOrStatus.split('\n');
+            if (prevParts.length >= 3) {
+              String prevMonthShort = prevParts[1];
+              String prevEngMonth = mapMonthToEnglish(prevMonthShort);
+              String prevDisplayMonth = prevEngMonth;
+
+              if (displayMonth != prevDisplayMonth) {
+                showHeader = true;
+              }
+            } else {
+              showHeader = true;
+            }
+          }
+        } else if (index == 0) {
+          if (provider.activeMonth.isNotEmpty) {
+            String rawMonth = provider.activeMonth;
+            displayMonth = rawMonth
+                .split(' ')
+                .map((word) {
+                  if (word.isEmpty) return '';
+                  return word[0].toUpperCase() +
+                      word.substring(1).toLowerCase();
+                })
+                .join(' ');
+            showHeader = true;
+          }
+        }
+
+        Widget transactionTile = TransactionTile(
+          dateOrStatus: tx.dateOrStatus,
+          keteranganKiri: tx.keteranganKiri,
+          keteranganKanan: tx.keteranganKanan,
+          subtitle: tx.subtitle,
+          amount: tx.amount,
+          isDebit: tx.isDebit,
+        );
+
+        if (showHeader && displayMonth.isNotEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: 12.0,
+                  top: index == 0 ? 4.0 : 20.0,
+                  left: 4.0,
+                ),
+                child: Text(
+                  displayMonth,
+                  style: GoogleFonts.openSans(
+                    color: const Color(0xFF00529C),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              transactionTile,
+            ],
+          );
+        }
+
+        return transactionTile;
+      },
     );
   }
 }
 
-// --- Widget Terpisah (Clean Architecture UI) ---
+// -----------------------------------------------------------------------------
+// DELEGATES UNTUK STICKY SCROLL
+// -----------------------------------------------------------------------------
 
-class AccountInfoCard extends StatelessWidget {
-  const AccountInfoCard({Key? key}) : super(key: key);
+class _SearchFilterDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  _SearchFilterDelegate({required this.child});
+  @override
+  double get minExtent => 72.0;
+  @override
+  double get maxExtent => 72.0;
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: Colors.white, child: child);
+  }
+
+  @override
+  bool shouldRebuild(_SearchFilterDelegate oldDelegate) => false;
+}
+
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  _StickyTabBarDelegate({required this.child});
+  @override
+  double get minExtent => 48.0;
+  @override
+  double get maxExtent => 48.0;
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(_StickyTabBarDelegate oldDelegate) => true;
+}
+
+class _AccountCardDelegate extends SliverPersistentHeaderDelegate {
+  final String accountNumber;
+  final String balance;
+  final bool isBalanceVisible;
+  final bool innerBoxIsScrolled;
+
+  _AccountCardDelegate({
+    required this.accountNumber,
+    required this.balance,
+    required this.isBalanceVisible,
+    this.innerBoxIsScrolled = false,
+  });
+
+  @override
+  double get minExtent => 84.0;
+  @override
+  double get maxExtent => 192.0;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    double shrinkProgress = (shrinkOffset / (maxExtent - minExtent)).clamp(
+      0.0,
+      1.0,
+    );
+    double horizontalPadding = 16.0;
+    double topPadding = 12.0 - (4.0 * shrinkProgress);
+    double bottomPadding = 20.0 - (4.0 * shrinkProgress);
+
+    Color bgColor = (innerBoxIsScrolled || shrinkProgress == 1.0)
+        ? const Color(0xFF004D8E)
+        : Color.lerp(
+            Colors.transparent,
+            const Color(0xFF004D8E),
+            shrinkProgress,
+          )!;
+
+    return Container(
+      color: bgColor,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: horizontalPadding,
+            right: horizontalPadding,
+            top: topPadding,
+            bottom: bottomPadding,
+          ),
+          child: AccountInfoCard(
+            accountNumber: accountNumber,
+            balance: balance,
+            isBalanceVisible: isBalanceVisible,
+            shrinkProgress: shrinkProgress,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _AccountCardDelegate oldDelegate) {
+    return oldDelegate.innerBoxIsScrolled != innerBoxIsScrolled ||
+        oldDelegate.accountNumber != accountNumber ||
+        oldDelegate.balance != balance ||
+        oldDelegate.isBalanceVisible != isBalanceVisible;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// ACCOUNT INFO CARD WIDGET
+// -----------------------------------------------------------------------------
+
+class AccountInfoCard extends StatefulWidget {
+  final String accountNumber;
+  final String balance;
+  final bool isBalanceVisible;
+  final double shrinkProgress;
+
+  const AccountInfoCard({
+    super.key,
+    required this.accountNumber,
+    required this.balance,
+    required this.isBalanceVisible,
+    required this.shrinkProgress,
+  });
+
+  @override
+  State<AccountInfoCard> createState() => _AccountInfoCardState();
+}
+
+class _AccountInfoCardState extends State<AccountInfoCard> {
+  late bool _isBalanceVisible;
+  late Timer _timer;
+  String _currentUtcTime = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _isBalanceVisible = widget.isBalanceVisible;
+    _updateTime();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _updateTime();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  void _updateTime() {
+    final now = DateTime.now();
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    String pad(int n) => n.toString().padLeft(2, '0');
+
+    if (mounted) {
+      setState(() {
+        _currentUtcTime =
+            '${pad(now.day)} ${months[now.month - 1]} ${now.year} ${pad(now.hour)}:${pad(now.minute)}:${pad(now.second)} UTC+7';
+      });
+    }
+  }
+
+  String _formatBalance(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return '0';
+    String result = '';
+    int count = 0;
+    for (int i = digits.length - 1; i >= 0; i--) {
+      if (count != 0 && count % 3 == 0) {
+        result = '.$result';
+      }
+      result = digits[i] + result;
+      count++;
+    }
+    return result;
+  }
+
+  String _formatAccountNumber(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty) return '';
+    String result = '';
+    for (int i = 0; i < digits.length; i++) {
+      if (i > 0 && i % 3 == 0) {
+        if (digits.length - i == 1) {
+        } else {
+          result += ' - ';
+        }
+      }
+      result += digits[i];
+    }
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header Kartu
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: const BoxDecoration(
-              color: Color(0xFF5D8AA8), // Warna Muted Teal/Blue
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Account No.',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        '024 - 021 - 9280',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.copy, color: Colors.white, size: 18),
-              ],
-            ),
-          ),
+    double cardHeight = 160.0 - (100.0 * widget.shrinkProgress);
+    double dynamicRadius = 16.0;
 
-          // Body Kartu
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
+    return SizedBox(
+      height: cardHeight,
+      width: double.infinity,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(dynamicRadius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: 0.08 * (1.0 - widget.shrinkProgress),
               ),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Active Balance',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: const [
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(dynamicRadius),
+          child: Stack(
+            children: [
+              Positioned(
+                top: 60 - (60 * widget.shrinkProgress),
+                left: 0,
+                right: 0,
+                height: 100,
+                child: Opacity(
+                  opacity: (1.0 - (widget.shrinkProgress * 1.5)).clamp(
+                    0.0,
+                    1.0,
+                  ),
+                  child: Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: 12.0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          'IDR ',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF333333),
+                          'Active Balance',
+                          style: GoogleFonts.openSans(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'IDR ',
+                                  style: GoogleFonts.openSans(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color.fromARGB(
+                                      255,
+                                      54,
+                                      54,
+                                      54,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  _isBalanceVisible
+                                      ? _formatBalance(widget.balance)
+                                      : '••••••••',
+                                  style: GoogleFonts.openSans(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: _isBalanceVisible ? 0 : 2.0,
+                                    color: const Color.fromARGB(
+                                      255,
+                                      54,
+                                      54,
+                                      54,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isBalanceVisible = !_isBalanceVisible;
+                                });
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Icon(
+                                  _isBalanceVisible
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: const Color(0xFF005BAC),
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'TAHAPAN - IDR',
+                          style: GoogleFonts.openSans(
+                            color: Colors.grey.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         Text(
-                          '• • • • • • •',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF333333),
+                          _currentUtcTime,
+                          style: GoogleFonts.openSans(
+                            color: Colors.grey.shade500,
+                            fontSize: 10,
                           ),
                         ),
                       ],
                     ),
-                    Icon(
-                      Icons.visibility_off,
-                      color: Colors.blue.shade800,
-                      size: 20,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'TAHAPAN - IDR',
-                  style: TextStyle(
-                    color: Colors.grey.shade800,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '06 Jun 2026 22:39:11 UTC+7',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
+              ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 60,
+                child: Container(
+                  color: const Color(0xFF6A8EAE),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Account No.',
+                        style: GoogleFonts.openSans(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            _formatAccountNumber(widget.accountNumber),
+                            style: GoogleFonts.openSans(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () async {
+                              await Clipboard.setData(
+                                ClipboardData(text: widget.accountNumber),
+                              );
+                            },
+                            child: Transform.scale(
+                              scaleX: -1,
+                              child: const Icon(
+                                CupertinoIcons.square_on_square,
+                                color: Colors.white70,
+                                size: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
+// -----------------------------------------------------------------------------
+// LIST TRANSAKSI WIDGET
+// -----------------------------------------------------------------------------
+
 class TransactionTile extends StatelessWidget {
   final String dateOrStatus;
-  final String title;
+  final String keteranganKiri;
+  final String keteranganKanan;
   final String subtitle;
   final String amount;
   final bool isDebit;
 
   const TransactionTile({
-    Key? key,
+    super.key,
     required this.dateOrStatus,
-    required this.title,
+    required this.keteranganKiri,
+    required this.keteranganKanan,
     required this.subtitle,
     required this.amount,
     this.isDebit = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -454,39 +915,35 @@ class TransactionTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Kolom Kiri: Tanggal / Status PEND
-          SizedBox(
-            width: 40,
-            child: Text(
-              dateOrStatus,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontWeight: FontWeight.bold,
-                fontSize: dateOrStatus == 'PEND' ? 12 : 14,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-
-          // Kolom Kanan: Detail Transaksi
+          SizedBox(width: 60, child: _buildDateOrStatus()),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: const TextStyle(
-                    color: Color(0xFF003366), // Warna biru gelap teks myBCA
+                  keteranganKiri,
+                  style: GoogleFonts.openSans(
+                    color: const Color(0xFF003366),
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
                 ),
+                if (keteranganKanan.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    keteranganKanan,
+                    style: GoogleFonts.openSans(
+                      color: const Color(0xFF003366),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFF003366),
+                  style: GoogleFonts.openSans(
+                    color: const Color(0xFF003366),
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -494,10 +951,10 @@ class TransactionTile extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   amount,
-                  style: TextStyle(
+                  style: GoogleFonts.openSans(
                     color: isDebit
                         ? const Color(0xFFD32F2F)
-                        : Colors.green, // Merah untuk pengeluaran
+                        : const Color(0xFF008A00),
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -509,10 +966,74 @@ class TransactionTile extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildDateOrStatus() {
+    List<String> parts = dateOrStatus.split('\n');
+
+    if (parts.length >= 3) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            parts[0],
+            style: GoogleFonts.openSans(
+              color: const Color(0xFF333333).withValues(alpha: 0.5),
+              // --- PERUBAHAN: Mengurangi ketebalan ke w700 & mengatur ukuran hari ---
+              fontWeight: FontWeight.w700,
+              fontSize: 28,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            parts[1].toUpperCase(),
+            style: GoogleFonts.openSans(
+              color: Colors.grey.shade500.withValues(alpha: 0.5),
+              // --- PERUBAHAN: Mengurangi ketebalan ke w700 & menyamakan ukuran bulan ke ukuran tahun ---
+              fontWeight: FontWeight.w700,
+              fontSize: 10,
+              height: 1.0,
+            ),
+          ),
+          Text(
+            parts[2],
+            style: GoogleFonts.openSans(
+              color: Colors.grey.shade500.withValues(alpha: 0.5),
+              // --- PERUBAHAN: Mengurangi ketebalan ke w700 & mempertahankan ukuran tahun asli ---
+              fontWeight: FontWeight.w700,
+              fontSize: 10,
+              height: 1.0,
+            ),
+          ),
+        ],
+      );
+    } else {
+      bool isPending = dateOrStatus.toUpperCase() == 'PEND';
+      return Padding(
+        padding: const EdgeInsets.only(top: 6.0),
+        child: Text(
+          dateOrStatus,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.openSans(
+            color: isPending ? Colors.orange.shade700 : Colors.grey.shade400,
+            // --- PERUBAHAN: Mengurangi ketebalan fallback status ke w700 ---
+            fontWeight: FontWeight.w700,
+            fontStyle: isPending ? FontStyle.italic : FontStyle.normal,
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+  }
 }
 
+// -----------------------------------------------------------------------------
+// SKELETON LOADING WIDGET
+// -----------------------------------------------------------------------------
+
 class SkeletonTransactionTile extends StatefulWidget {
-  const SkeletonTransactionTile({Key? key}) : super(key: key);
+  const SkeletonTransactionTile({super.key});
 
   @override
   State<SkeletonTransactionTile> createState() =>
@@ -527,12 +1048,10 @@ class _SkeletonTransactionTileState extends State<SkeletonTransactionTile>
   @override
   void initState() {
     super.initState();
-    // Animasi denyut (pulse) untuk skeleton
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
-
     _animation = Tween<double>(
       begin: 0.3,
       end: 0.8,
@@ -559,7 +1078,6 @@ class _SkeletonTransactionTileState extends State<SkeletonTransactionTile>
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Skeleton untuk Kolom Tanggal/Status
             Container(
               width: 40,
               height: 16,
@@ -569,13 +1087,10 @@ class _SkeletonTransactionTileState extends State<SkeletonTransactionTile>
               ),
             ),
             const SizedBox(width: 16),
-
-            // Skeleton untuk Detail Transaksi
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Skeleton Title (Baris 1)
                   Container(
                     width: double.infinity,
                     height: 14,
@@ -585,7 +1100,6 @@ class _SkeletonTransactionTileState extends State<SkeletonTransactionTile>
                     ),
                   ),
                   const SizedBox(height: 6),
-                  // Skeleton Subtitle (Baris 2)
                   Container(
                     width: 150,
                     height: 12,
@@ -595,7 +1109,6 @@ class _SkeletonTransactionTileState extends State<SkeletonTransactionTile>
                     ),
                   ),
                   const SizedBox(height: 10),
-                  // Skeleton Amount (Baris 3)
                   Container(
                     width: 100,
                     height: 14,

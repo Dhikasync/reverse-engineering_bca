@@ -1,0 +1,1328 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:math' as math; // Tambahan untuk kalkulasi putaran animasi
+import 'package:flutter/services.dart' show rootBundle;
+// Import viewer page yang baru dibuat (sesuaikan path-nya jika berbeda)
+import 'package:reverse_engineering_bca/account/e_statement_viewer_page.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:path_provider/path_provider.dart';
+import '../providers/transaction_provider.dart';
+import '../models/transaction.dart';
+
+class EStatementPage extends StatefulWidget {
+  final String userName;
+  final String accountNumber;
+  final String balance;
+  final String accountTypeDetail;
+
+  const EStatementPage({
+    super.key,
+    required this.userName,
+    required this.accountNumber,
+    required this.balance,
+    required this.accountTypeDetail,
+  });
+
+  @override
+  State<EStatementPage> createState() => _EStatementPageState();
+}
+
+class _EStatementPageState extends State<EStatementPage> {
+  String _formatMonthDisplay(String rawMonth) {
+    return rawMonth.toUpperCase();
+  }
+
+  String _formatAccountNumber(String rawNumber) {
+    if (rawNumber.length < 10) return rawNumber;
+    return '${rawNumber.substring(0, 3)} - ${rawNumber.substring(3, 6)} - ${rawNumber.substring(6)}';
+  }
+
+  String _formatDateForPdf(String dateOrStatus) {
+    final List<String> parts = dateOrStatus.split('\n');
+    if (parts.length >= 2) {
+      final String day = parts[0].padLeft(2, '0');
+      final String monthStr = parts[1].toLowerCase();
+
+      final Map<String, String> monthsMap = {
+        'jan': '01',
+        'feb': '02',
+        'mar': '03',
+        'apr': '04',
+        'may': '05',
+        'mei': '05',
+        'jun': '06',
+        'jul': '07',
+        'aug': '08',
+        'agu': '08',
+        'sep': '09',
+        'oct': '10',
+        'okt': '10',
+        'nov': '11',
+        'dec': '12',
+        'des': '12',
+      };
+
+      String monthNum = '01';
+      for (var key in monthsMap.keys) {
+        if (monthStr.startsWith(key)) {
+          monthNum = monthsMap[key]!;
+          break;
+        }
+      }
+      return '$day/$monthNum';
+    }
+    return dateOrStatus;
+  }
+
+  // Helper untuk mengubah string bulan (ex: "Juni 2026") menjadi DateTime
+  DateTime _parsePeriodToDate(String period) {
+    final parts = period.split(' ');
+    if (parts.isEmpty) return DateTime.now();
+
+    String monthStr = parts[0].toLowerCase();
+    int year = parts.length > 1
+        ? (int.tryParse(parts[1]) ?? DateTime.now().year)
+        : DateTime.now().year;
+
+    int month = 1;
+    if (monthStr.contains('jan')) {
+      month = 1;
+    } else if (monthStr.contains('feb')) {
+      month = 2;
+    } else if (monthStr.contains('mar')) {
+      month = 3;
+    } else if (monthStr.contains('apr')) {
+      month = 4;
+    } else if (monthStr.contains('mei') || monthStr.contains('may')) {
+      month = 5;
+    } else if (monthStr.contains('jun')) {
+      month = 6;
+    } else if (monthStr.contains('jul')) {
+      month = 7;
+    } else if (monthStr.contains('agu') || monthStr.contains('aug')) {
+      month = 8;
+    } else if (monthStr.contains('sep')) {
+      month = 9;
+    } else if (monthStr.contains('okt') || monthStr.contains('oct')) {
+      month = 10;
+    } else if (monthStr.contains('nov')) {
+      month = 11;
+    } else if (monthStr.contains('des') || monthStr.contains('dec')) {
+      month = 12;
+    }
+
+    return DateTime(year, month);
+  }
+
+  void _drawRoundedRect(
+    PdfGraphics graphics,
+    PdfPen pen,
+    Rect bounds,
+    double radius,
+  ) {
+    final PdfPath path = PdfPath();
+    double d = radius * 2;
+
+    path.addArc(Rect.fromLTWH(bounds.left, bounds.top, d, d), 180, 90);
+    path.addLine(
+      Offset(bounds.left + radius, bounds.top),
+      Offset(bounds.right - radius, bounds.top),
+    );
+    path.addArc(Rect.fromLTWH(bounds.right - d, bounds.top, d, d), 270, 90);
+    path.addLine(
+      Offset(bounds.right, bounds.top + radius),
+      Offset(bounds.right, bounds.bottom - radius),
+    );
+    path.addArc(
+      Rect.fromLTWH(bounds.right - d, bounds.bottom - d, d, d),
+      0,
+      90,
+    );
+    path.addLine(
+      Offset(bounds.right - radius, bounds.bottom),
+      Offset(bounds.left + radius, bounds.bottom),
+    );
+    path.addArc(Rect.fromLTWH(bounds.left, bounds.bottom - d, d, d), 90, 90);
+    path.addLine(
+      Offset(bounds.left, bounds.bottom - radius),
+      Offset(bounds.left, bounds.top + radius),
+    );
+
+    graphics.drawPath(path, pen: pen);
+  }
+
+  void _drawPageDecorations(
+    PdfPage page,
+    int pageNum,
+    int totalPages,
+    String periodStr,
+    PdfBitmap? logo,
+    TransactionProvider provider,
+    List<int>? fontData,
+  ) {
+    final PdfGraphics graphics = page.graphics;
+
+    final PdfFont fontTitle = fontData != null
+        ? PdfTrueTypeFont(fontData, 14, style: PdfFontStyle.bold)
+        : PdfStandardFont(
+            PdfFontFamily.helvetica,
+            14,
+            style: PdfFontStyle.bold,
+          );
+    final PdfFont fontBold = fontData != null
+        ? PdfTrueTypeFont(fontData, 7, style: PdfFontStyle.bold)
+        : PdfStandardFont(PdfFontFamily.helvetica, 7, style: PdfFontStyle.bold);
+
+    final PdfFont fontCatatanTitle = fontData != null
+        ? PdfTrueTypeFont(fontData, 6, style: PdfFontStyle.bold)
+        : PdfStandardFont(PdfFontFamily.helvetica, 6, style: PdfFontStyle.bold);
+
+    final PdfFont fontCatatanBody = fontData != null
+        ? PdfTrueTypeFont(fontData, 6, style: PdfFontStyle.regular)
+        : PdfStandardFont(
+            PdfFontFamily.helvetica,
+            6,
+            style: PdfFontStyle.regular,
+          );
+
+    // Font bawaan (Helvetica) khusus untuk merender karakter bullet (•) yang sering hilang di custom font
+    final PdfFont fontBullet = PdfStandardFont(PdfFontFamily.helvetica, 6);
+
+    // Anda bisa mengatur ketebalan garis/border kotak di sini (default 0.5, diubah ke 1.0 agar lebih tebal)
+    final PdfPen linePen = PdfPen(PdfColor(0, 0, 0), width: 1.0);
+
+    // Anda bisa mengatur ketebalan font bold di sini (semakin besar angkanya, semakin tebal)
+    final PdfPen textBoldPen = PdfPen(PdfColor(0, 0, 0), width: 0.15);
+    final PdfBrush textBoldBrush = PdfBrushes.black;
+
+    void drawBoldString(
+      String text,
+      PdfFont font,
+      Rect bounds, {
+      PdfStringFormat? format,
+      PdfPen? customPen,
+    }) {
+      graphics.drawString(
+        text,
+        font,
+        pen: customPen ?? textBoldPen,
+        brush: textBoldBrush,
+        bounds: bounds,
+        // Anda bisa mengatur letterSpacing (jarak antar huruf) di sini (misal: 1.0 hingga 1.5)
+        format: format ?? PdfStringFormat(characterSpacing: 1.2),
+      );
+    }
+
+    if (logo != null) {
+      graphics.drawImage(logo, const Rect.fromLTWH(25.0, 20.0, 75.0, 25.0));
+    } else {
+      final PdfFont fontBCA = PdfStandardFont(
+        PdfFontFamily.helvetica,
+        16,
+        multiStyle: [PdfFontStyle.bold, PdfFontStyle.italic],
+      );
+      graphics.drawString(
+        'BCA',
+        fontBCA,
+        bounds: const Rect.fromLTWH(25.0, 25.0, 100.0, 20.0),
+      );
+    }
+
+    drawBoldString(
+      widget.accountTypeDetail.toUpperCase(),
+      fontTitle,
+      const Rect.fromLTWH(0.0, 23.0, 595.0, 25.0),
+      // Tambahkan characterSpacing: 1.2 agar spasi hurufnya ikut renggang
+      format: PdfStringFormat(
+        alignment: PdfTextAlignment.center,
+        characterSpacing: 1.2,
+      ),
+      // Anda bisa mengatur ketebalan judul laporan (TAHAPAN BCA, dll) di sini:
+      customPen: PdfPen(PdfColor(0, 0, 0), width: 0.3),
+    );
+
+    // Font khusus KCP/KCU yang ukurannya lebih kecil (ukuran 6, defaultnya 7)
+    final PdfFont fontBranch = fontData != null
+        ? PdfTrueTypeFont(fontData, 6, style: PdfFontStyle.bold)
+        : PdfStandardFont(PdfFontFamily.helvetica, 6, style: PdfFontStyle.bold);
+
+    drawBoldString(
+      provider.branch,
+      fontBranch,
+      // Mendekatkan jarak KCP ke garis kotak (diubah dari 55.0 menjadi 62.0)
+      const Rect.fromLTWH(35.0, 62.0, 200.0, 10.0),
+    );
+
+    double boxY = 72.0;
+    double boxWidth = 260.0;
+    double boxHeight = 94.0;
+    double borderRadius = 5.0;
+
+    _drawRoundedRect(
+      graphics,
+      linePen,
+      Rect.fromLTWH(25.0, boxY, boxWidth, boxHeight),
+      borderRadius,
+    );
+
+    double textLeftX = 35.0;
+    double textLeftY = boxY + 10.0;
+
+    drawBoldString(
+      widget.userName.toUpperCase(),
+      fontBold,
+      Rect.fromLTWH(textLeftX, textLeftY, 240.0, 10.0),
+      // Anda bisa mengatur khusus ketebalan Nama Nasabah di sini
+      customPen: PdfPen(PdfColor(0, 0, 0), width: 0.1),
+    );
+
+    for (int i = 0; i < provider.address.length; i++) {
+      textLeftY += 14.0;
+      drawBoldString(
+        provider.address[i],
+        fontBold,
+        Rect.fromLTWH(textLeftX, textLeftY, 240.0, 10.0),
+        // Anda bisa mengatur khusus ketebalan Alamat Nasabah di sini
+        customPen: PdfPen(PdfColor(0, 0, 0), width: 0.1),
+      );
+    }
+
+    double rightBoxX = 310.0;
+
+    _drawRoundedRect(
+      graphics,
+      linePen,
+      Rect.fromLTWH(rightBoxX, boxY, boxWidth, boxHeight),
+      borderRadius,
+    );
+
+    double textRightX = rightBoxX + 15.0;
+    double textRightY = boxY + 15.0;
+    double colonX = rightBoxX + 85.0;
+    double valueX = rightBoxX + 95.0;
+
+    drawBoldString(
+      'NO. REKENING',
+      fontBold,
+      Rect.fromLTWH(textRightX, textRightY, 80.0, 10.0),
+    );
+    drawBoldString(
+      ':',
+      fontBold,
+      Rect.fromLTWH(colonX, textRightY, 10.0, 10.0),
+    );
+    drawBoldString(
+      widget.accountNumber,
+      fontBold,
+      Rect.fromLTWH(valueX, textRightY, 120.0, 10.0),
+    );
+
+    drawBoldString(
+      'HALAMAN',
+      fontBold,
+      Rect.fromLTWH(textRightX, textRightY + 16.0, 80.0, 10.0),
+    );
+    drawBoldString(
+      ':',
+      fontBold,
+      Rect.fromLTWH(colonX, textRightY + 16.0, 10.0, 10.0),
+    );
+    drawBoldString(
+      '$pageNum / $totalPages',
+      fontBold,
+      Rect.fromLTWH(valueX, textRightY + 16.0, 120.0, 10.0),
+    );
+
+    drawBoldString(
+      'PERIODE',
+      fontBold,
+      Rect.fromLTWH(textRightX, textRightY + 32.0, 80.0, 10.0),
+    );
+    drawBoldString(
+      ':',
+      fontBold,
+      Rect.fromLTWH(colonX, textRightY + 32.0, 10.0, 10.0),
+    );
+    drawBoldString(
+      periodStr,
+      fontBold,
+      Rect.fromLTWH(valueX, textRightY + 32.0, 120.0, 10.0),
+    );
+
+    drawBoldString(
+      'MATA UANG',
+      fontBold,
+      Rect.fromLTWH(textRightX, textRightY + 48.0, 80.0, 10.0),
+    );
+    drawBoldString(
+      ':',
+      fontBold,
+      Rect.fromLTWH(colonX, textRightY + 48.0, 10.0, 10.0),
+    );
+    drawBoldString(
+      'IDR',
+      fontBold,
+      Rect.fromLTWH(valueX, textRightY + 48.0, 120.0, 10.0),
+    );
+
+    double catBoxY = 176.0;
+    double catBoxHeight = 72.0;
+
+    _drawRoundedRect(
+      graphics,
+      linePen,
+      Rect.fromLTWH(25.0, catBoxY, 545.0, catBoxHeight),
+      borderRadius,
+    );
+
+    drawBoldString(
+      'CATATAN:',
+      fontCatatanTitle,
+      Rect.fromLTWH(32.0, catBoxY + 5.0, 100.0, 10.0),
+      format: PdfStringFormat(characterSpacing: 2.0),
+    );
+
+    final PdfStringFormat justifyFormat = PdfStringFormat(
+      alignment: PdfTextAlignment.justify,
+      lineSpacing: 5.0,
+      characterSpacing: 1.3,
+    );
+
+    // Menggambar titik peluru manual (lingkaran solid) karena karakter font sering gagal
+    graphics.drawEllipse(
+      Rect.fromLTWH(32.0, catBoxY + 19.5, 2.5, 2.5),
+      brush: PdfBrushes.black,
+    );
+    graphics.drawString(
+      'Apabila nasabah tidak melakukan sanggahan atas Laporan Mutasi Rekening ini sampai dengan akhir bulan berikutnya, nasabah dianggap telah menyetujui segala data yang tercantum pada Laporan Mutasi Rekening ini.',
+      fontCatatanBody,
+      bounds: Rect.fromLTWH(40.0, catBoxY + 18.0, 240.0, 70.0),
+      format: justifyFormat,
+    );
+
+    // Titik peluru manual kedua
+    graphics.drawEllipse(
+      Rect.fromLTWH(310.0, catBoxY + 19.5, 2.5, 2.5),
+      brush: PdfBrushes.black,
+    );
+    graphics.drawString(
+      'BCA berhak setiap saat melakukan koreksi apabila ada kesalahan pada Laporan Mutasi Rekening.',
+      fontCatatanBody,
+      bounds: Rect.fromLTWH(318.0, catBoxY + 18.0, 240.0, 70.0),
+      format: justifyFormat,
+    );
+
+    double tableHeaderY = 260.0;
+    double headerH = 20.0;
+
+    _drawRoundedRect(
+      graphics,
+      linePen,
+      Rect.fromLTWH(25.0, tableHeaderY, 545.0, headerH),
+      borderRadius,
+    );
+
+    graphics.drawLine(
+      linePen,
+      Offset(80.0, tableHeaderY),
+      Offset(80.0, tableHeaderY + headerH),
+    );
+    graphics.drawLine(
+      linePen,
+      Offset(280.0, tableHeaderY),
+      Offset(280.0, tableHeaderY + headerH),
+    );
+    graphics.drawLine(
+      linePen,
+      Offset(315.0, tableHeaderY),
+      Offset(315.0, tableHeaderY + headerH),
+    );
+    graphics.drawLine(
+      linePen,
+      Offset(460.0, tableHeaderY),
+      Offset(460.0, tableHeaderY + headerH),
+    );
+
+    final PdfStringFormat centerFormat = PdfStringFormat(
+      alignment: PdfTextAlignment.center,
+      lineAlignment: PdfVerticalAlignment.middle,
+    );
+
+    graphics.drawString(
+      'TANGGAL',
+      fontBold,
+      bounds: Rect.fromLTWH(25.0, tableHeaderY, 55.0, headerH),
+      format: centerFormat,
+    );
+    graphics.drawString(
+      'KETERANGAN',
+      fontBold,
+      bounds: Rect.fromLTWH(80.0, tableHeaderY, 200.0, headerH),
+      format: centerFormat,
+    );
+    graphics.drawString(
+      'CBG',
+      fontBold,
+      bounds: Rect.fromLTWH(280.0, tableHeaderY, 35.0, headerH),
+      format: centerFormat,
+    );
+    graphics.drawString(
+      'MUTASI',
+      fontBold,
+      bounds: Rect.fromLTWH(315.0, tableHeaderY, 145.0, headerH),
+      format: centerFormat,
+    );
+    graphics.drawString(
+      'SALDO',
+      fontBold,
+      bounds: Rect.fromLTWH(460.0, tableHeaderY, 110.0, headerH),
+      format: centerFormat,
+    );
+  }
+
+  Future<void> _exportPdf(String selectedPeriod) async {
+    // 1. Tampilkan Dialog Loading dengan Animasi Sweeping (Mutar & Terputus) tanpa latar belakang putih
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Dialog(
+          backgroundColor:
+              Colors.transparent, // Membuat background tembus pandang
+          elevation: 0,
+          child: Center(
+            child: _AnimatedBCALogo(), // Widget animasi dipanggil langsung
+          ),
+        );
+      },
+    );
+
+    // 2. Beri waktu sejenak agar UI sempat me-render dialog loading
+    await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
+
+    try {
+      final provider = Provider.of<TransactionProvider>(context, listen: false);
+      final allTransactions = provider.transactions;
+
+      String getShortMonth(String indonesianMonth) {
+        final m = indonesianMonth.toLowerCase();
+        if (m.contains('jan')) return 'Jan';
+        if (m.contains('feb')) return 'Feb';
+        if (m.contains('mar')) return 'Mar';
+        if (m.contains('apr')) return 'Apr';
+        if (m.contains('mei')) return 'May';
+        if (m.contains('jun')) return 'Jun';
+        if (m.contains('jul')) return 'Jul';
+        if (m.contains('agu')) return 'Aug';
+        if (m.contains('sep')) return 'Sep';
+        if (m.contains('okt')) return 'Oct';
+        if (m.contains('nov')) return 'Nov';
+        if (m.contains('des')) return 'Dec';
+        return '';
+      }
+
+      final periodParts = selectedPeriod.split(' ');
+      String targetMonthIndo = periodParts.isNotEmpty ? periodParts[0] : '';
+      String targetYear = periodParts.length > 1 ? periodParts[1] : '';
+      String targetShortMonth = getShortMonth(targetMonthIndo);
+
+      DateTime parseDate(String dateOrStatus) {
+        final parts = dateOrStatus.split('\n');
+        if (parts.length >= 3) {
+          int day = int.tryParse(parts[0]) ?? 1;
+          int year = int.tryParse(parts[2]) ?? 2025;
+          String m = parts[1].toLowerCase();
+          int month = 1;
+          if (m.contains('jan')) {
+            month = 1;
+          } else if (m.contains('feb')) {
+            month = 2;
+          } else if (m.contains('mar')) {
+            month = 3;
+          } else if (m.contains('apr')) {
+            month = 4;
+          } else if (m.contains('may') || m.contains('mei')) {
+            month = 5;
+          } else if (m.contains('jun')) {
+            month = 6;
+          } else if (m.contains('jul')) {
+            month = 7;
+          } else if (m.contains('aug') || m.contains('agu')) {
+            month = 8;
+          } else if (m.contains('sep')) {
+            month = 9;
+          } else if (m.contains('oct') || m.contains('okt')) {
+            month = 10;
+          } else if (m.contains('nov')) {
+            month = 11;
+          } else if (m.contains('dec') || m.contains('des')) {
+            month = 12;
+          }
+          return DateTime(year, month, day);
+        }
+        return DateTime(2000);
+      }
+
+      List<TransactionModel> chronologicalTransactions = List.from(
+        allTransactions,
+      );
+      if (chronologicalTransactions.isNotEmpty) {
+        DateTime firstDate = parseDate(
+          chronologicalTransactions.first.dateOrStatus,
+        );
+        DateTime lastDate = parseDate(
+          chronologicalTransactions.last.dateOrStatus,
+        );
+        if (firstDate.isAfter(lastDate)) {
+          chronologicalTransactions = chronologicalTransactions.reversed
+              .toList();
+        }
+      }
+
+      double startingBalanceForMonth = provider.getStartingBalanceForMonth(
+        targetShortMonth,
+        targetYear,
+      );
+      List<TransactionModel> targetTransactions = [];
+
+      for (var tx in chronologicalTransactions) {
+        final parts = tx.dateOrStatus.split('\n');
+        if (parts.length >= 3) {
+          String txMonth = parts[1];
+          String txYear = parts[2];
+
+          bool isTargetMonth =
+              txMonth.toLowerCase() == targetShortMonth.toLowerCase() &&
+              txYear == targetYear;
+
+          if (isTargetMonth) {
+            targetTransactions.add(tx);
+          }
+        }
+      }
+
+      final PdfDocument document = PdfDocument();
+      document.pageSettings.size = PdfPageSize.a4;
+      document.pageSettings.margins.all = 0;
+
+      // Tidak lagi mencoba memuat bca-sans.ttf karena file tidak ada
+      List<int>? fontData = null;
+
+      final PdfFont fontRegular = fontData != null
+          ? PdfTrueTypeFont(fontData, 7)
+          : PdfStandardFont(PdfFontFamily.helvetica, 7);
+      final PdfFont fontItalic = fontData != null
+          ? PdfTrueTypeFont(fontData, 7, style: PdfFontStyle.italic)
+          : PdfStandardFont(
+              PdfFontFamily.helvetica,
+              7,
+              style: PdfFontStyle.italic,
+            );
+
+      PdfBitmap? logoBitmap;
+      try {
+        final ByteData imageBytes = await rootBundle.load(
+          'assets/images/Logo BCA_Biru.png',
+        );
+        logoBitmap = PdfBitmap(imageBytes.buffer.asUint8List());
+      } catch (e) {
+        debugPrint('Logo BCA tidak ditemukan di path: $e');
+      }
+
+      double currentBalance = startingBalanceForMonth;
+      double mutasiCr = 0.0;
+      double mutasiDb = 0.0;
+      int countCr = 0;
+      int countDb = 0;
+
+      PdfPage currentPage = document.pages.add();
+      double currentY = 290.0;
+
+      String getMonthNumberFromPeriod(String p) {
+        final m = p.toLowerCase();
+        if (m.contains('jan')) return '01';
+        if (m.contains('feb')) return '02';
+        if (m.contains('mar')) return '03';
+        if (m.contains('apr')) return '04';
+        if (m.contains('may') || m.contains('mei')) return '05';
+        if (m.contains('jun')) return '06';
+        if (m.contains('jul')) return '07';
+        if (m.contains('aug') || m.contains('agu')) return '08';
+        if (m.contains('sep')) return '09';
+        if (m.contains('oct') || m.contains('okt')) return '10';
+        if (m.contains('nov')) return '11';
+        if (m.contains('dec') || m.contains('des')) return '12';
+        return '01';
+      }
+
+      String saldoAwalDate = "01/${getMonthNumberFromPeriod(selectedPeriod)}";
+      if (targetTransactions.isNotEmpty) {
+        String firstTxDate = _formatDateForPdf(
+          targetTransactions.first.dateOrStatus,
+        );
+        if (firstTxDate.contains('/')) {
+          saldoAwalDate = "01/${firstTxDate.split('/')[1]}";
+        }
+      }
+
+      String formatCurrency(double val) => val
+          .toStringAsFixed(2)
+          .replaceAllMapped(
+            RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+            (Match m) => '${m[1]},',
+          );
+
+      currentPage.graphics.drawString(
+        saldoAwalDate,
+        fontRegular,
+        bounds: Rect.fromLTWH(25.0, currentY, 55.0, 10.0),
+        format: PdfStringFormat(alignment: PdfTextAlignment.center),
+      );
+      currentPage.graphics.drawString(
+        'SALDO AWAL',
+        fontRegular,
+        bounds: Rect.fromLTWH(85.0, currentY, 190.0, 10.0),
+      );
+      currentPage.graphics.drawString(
+        formatCurrency(startingBalanceForMonth),
+        fontRegular,
+        bounds: Rect.fromLTWH(460.0, currentY, 105.0, 10.0),
+        format: PdfStringFormat(alignment: PdfTextAlignment.right),
+      );
+
+      currentY += 16.0;
+
+      for (int i = 0; i < targetTransactions.length; i++) {
+        var t = targetTransactions[i];
+        
+        bool isLastOnDate = true;
+        if (i < targetTransactions.length - 1) {
+          var nextT = targetTransactions[i + 1];
+          String currentDateStr = _formatDateForPdf(t.dateOrStatus);
+          String nextDateStr = _formatDateForPdf(nextT.dateOrStatus);
+          if (currentDateStr == nextDateStr) {
+            isLastOnDate = false;
+          }
+        }
+
+        String rawAmount = t.amount
+            .replaceAll('IDR', '')
+            .replaceAll(',', '')
+            .trim();
+        double amount = double.tryParse(rawAmount) ?? 0.0;
+
+        if (t.isDebit) {
+          currentBalance -= amount;
+          mutasiDb += amount;
+          countDb++;
+        } else {
+          currentBalance += amount;
+          mutasiCr += amount;
+          countCr++;
+        }
+
+        List<String> leftLines = t.keteranganKiri
+            .split('\n')
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty)
+            .toList();
+
+        List<String> rightLines = t.keteranganKanan
+            .split('\n')
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty)
+            .toList();
+
+        int maxLines = leftLines.length > rightLines.length
+            ? leftLines.length
+            : rightLines.length;
+        if (maxLines == 0) maxLines = 1;
+        double rowHeight = 12.0 * maxLines + 5.0;
+
+        if (currentY + rowHeight > 755.0) {
+          currentPage.graphics.drawString(
+            'Bersambung ke halaman berikut',
+            fontItalic,
+            bounds: const Rect.fromLTWH(25.0, 780.0, 540.0, 10.0),
+            format: PdfStringFormat(alignment: PdfTextAlignment.right),
+          );
+          currentPage = document.pages.add();
+          currentY = 285.0;
+        }
+
+        currentPage.graphics.drawString(
+          _formatDateForPdf(t.dateOrStatus),
+          fontRegular,
+          bounds: Rect.fromLTWH(25.0, currentY, 55.0, 10.0),
+          format: PdfStringFormat(alignment: PdfTextAlignment.center),
+        );
+
+        for (int i = 0; i < leftLines.length; i++) {
+          currentPage.graphics.drawString(
+            leftLines[i],
+            fontRegular,
+            bounds: Rect.fromLTWH(85.0, currentY + (i * 12.0), 105.0, 10.0),
+          );
+        }
+
+        for (int i = 0; i < rightLines.length; i++) {
+          currentPage.graphics.drawString(
+            rightLines[i],
+            fontRegular,
+            bounds: Rect.fromLTWH(195.0, currentY + (i * 12.0), 115.0, 10.0),
+          );
+        }
+
+        currentPage.graphics.drawString(
+          formatCurrency(amount),
+          fontRegular,
+          bounds: Rect.fromLTWH(315.0, currentY, 115.0, 10.0),
+          format: PdfStringFormat(alignment: PdfTextAlignment.right),
+        );
+
+        if (t.isDebit) {
+          currentPage.graphics.drawString(
+            'DB',
+            fontRegular,
+            bounds: Rect.fromLTWH(435.0, currentY, 20.0, 10.0),
+          );
+        }
+
+        if (isLastOnDate) {
+          currentPage.graphics.drawString(
+            formatCurrency(currentBalance),
+            fontRegular,
+            bounds: Rect.fromLTWH(460.0, currentY, 105.0, 10.0),
+            format: PdfStringFormat(alignment: PdfTextAlignment.right),
+          );
+        }
+
+        currentY += rowHeight;
+      }
+
+      double summaryHeight = 80.0;
+      if (currentY + summaryHeight > 755.0) {
+        currentPage.graphics.drawString(
+          'Bersambung ke halaman berikut',
+          fontItalic,
+          bounds: const Rect.fromLTWH(25.0, 780.0, 540.0, 10.0),
+          format: PdfStringFormat(alignment: PdfTextAlignment.right),
+        );
+        currentPage = document.pages.add();
+        currentY = 282.0;
+      } else {
+        currentY += 20.0;
+      }
+
+      double sumLabelX = 190.0;
+      double sumColonX = 260.0;
+      double sumValX = 270.0;
+      double sumCountX = 390.0;
+
+      currentPage.graphics.drawString(
+        'SALDO AWAL',
+        fontRegular,
+        bounds: Rect.fromLTWH(sumLabelX, currentY, 70, 10),
+      );
+      currentPage.graphics.drawString(
+        ':',
+        fontRegular,
+        bounds: Rect.fromLTWH(sumColonX, currentY, 10, 10),
+      );
+      currentPage.graphics.drawString(
+        formatCurrency(startingBalanceForMonth),
+        fontRegular,
+        bounds: Rect.fromLTWH(sumValX, currentY, 100, 10),
+        format: PdfStringFormat(alignment: PdfTextAlignment.right),
+      );
+
+      currentY += 16.0;
+      currentPage.graphics.drawString(
+        'MUTASI CR',
+        fontRegular,
+        bounds: Rect.fromLTWH(sumLabelX, currentY, 70, 10),
+      );
+      currentPage.graphics.drawString(
+        ':',
+        fontRegular,
+        bounds: Rect.fromLTWH(sumColonX, currentY, 10, 10),
+      );
+      currentPage.graphics.drawString(
+        formatCurrency(mutasiCr),
+        fontRegular,
+        bounds: Rect.fromLTWH(sumValX, currentY, 100, 10),
+        format: PdfStringFormat(alignment: PdfTextAlignment.right),
+      );
+      currentPage.graphics.drawString(
+        countCr.toString(),
+        fontRegular,
+        bounds: Rect.fromLTWH(sumCountX, currentY, 30, 10),
+      );
+
+      currentY += 16.0;
+      currentPage.graphics.drawString(
+        'MUTASI DB',
+        fontRegular,
+        bounds: Rect.fromLTWH(sumLabelX, currentY, 70, 10),
+      );
+      currentPage.graphics.drawString(
+        ':',
+        fontRegular,
+        bounds: Rect.fromLTWH(sumColonX, currentY, 10, 10),
+      );
+      currentPage.graphics.drawString(
+        formatCurrency(mutasiDb),
+        fontRegular,
+        bounds: Rect.fromLTWH(sumValX, currentY, 100, 10),
+        format: PdfStringFormat(alignment: PdfTextAlignment.right),
+      );
+      currentPage.graphics.drawString(
+        countDb.toString(),
+        fontRegular,
+        bounds: Rect.fromLTWH(sumCountX, currentY, 30, 10),
+      );
+
+      currentY += 16.0;
+      currentPage.graphics.drawString(
+        'SALDO AKHIR',
+        fontRegular,
+        bounds: Rect.fromLTWH(sumLabelX, currentY, 70, 10),
+      );
+      currentPage.graphics.drawString(
+        ':',
+        fontRegular,
+        bounds: Rect.fromLTWH(sumColonX, currentY, 10, 10),
+      );
+      currentPage.graphics.drawString(
+        formatCurrency(currentBalance),
+        fontRegular,
+        bounds: Rect.fromLTWH(sumValX, currentY, 100, 10),
+        format: PdfStringFormat(alignment: PdfTextAlignment.right),
+      );
+
+      final int totalPages = document.pages.count;
+      final String periodStr = selectedPeriod.toUpperCase();
+      for (int i = 0; i < totalPages; i++) {
+        _drawPageDecorations(
+          document.pages[i],
+          i + 1,
+          totalPages,
+          periodStr,
+          logoBitmap,
+          provider,
+          fontData,
+        );
+      }
+
+      final List<int> savedBytes = await document.save();
+      document.dispose();
+
+      final Directory dir = await getTemporaryDirectory();
+      final String filePath = '${dir.path}/Mutasi_${widget.accountNumber}.pdf';
+      final File file = File(filePath);
+      await file.writeAsBytes(savedBytes);
+
+      if (!mounted) return;
+
+      // 3. TUTUP DIALOG LOADING
+      Navigator.pop(context);
+
+      // =======================================================================
+      // ALUR NAVIGASI KE VIEWER PAGE
+      // =======================================================================
+      DateTime statementDate = _parsePeriodToDate(selectedPeriod);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EStatementViewerPage(
+            pdfPath: filePath,
+            accountNumber: widget.accountNumber,
+            statementDate: statementDate,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        // Jangan lupa tutup dialog loading jika ternyata terjadi error
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load PDF viewer: $e')),
+        );
+      }
+    }
+  }
+
+  Widget _buildPeriodIcon({required bool isSpecial}) {
+    final color = isSpecial ? const Color(0xFFBDBDBD) : const Color(0xFF03A9F4);
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: Stack(
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            child: Icon(Icons.description, color: color, size: 28),
+          ),
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              child: const Text(
+                'Rp',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 6,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<TransactionProvider>(context);
+    final months = provider.uploadedMonths;
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Savings & Current Accounts',
+          style: GoogleFonts.openSans(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/background.png'),
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 24,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Account No.',
+                          style: GoogleFonts.openSans(
+                            color: const Color(0xFF003366),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(1.0),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF03A9F4), Color(0xFF005DAA)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15.0),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _formatAccountNumber(widget.accountNumber),
+                                  style: GoogleFonts.openSans(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF003366),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'TAHAPAN - IDR',
+                                  style: GoogleFonts.openSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(
+                                      0xFF003366,
+                                    ).withValues(alpha: 0.4),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+
+                        Text(
+                          'Select Period',
+                          style: GoogleFonts.openSans(
+                            color: const Color(0xFF003366),
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          itemCount: months.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index < months.length) {
+                              final monthStr = months[index];
+                              final displayMonth = _formatMonthDisplay(
+                                monthStr,
+                              );
+
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Material(
+                                  color: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: const BorderSide(
+                                      color: Color(0xFFE0E0E0),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 4,
+                                    ),
+                                    leading: _buildPeriodIcon(isSpecial: false),
+                                    title: Text(
+                                      displayMonth,
+                                      style: GoogleFonts.openSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF003366),
+                                      ),
+                                    ),
+                                    trailing: Text(
+                                      'SHOW',
+                                      style: GoogleFonts.openSans(
+                                        color: const Color(0xFF003366),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    onTap: () => _exportPdf(monthStr),
+                                  ),
+                                ),
+                              );
+                            } else {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Material(
+                                  color: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: const BorderSide(
+                                      color: Color(0xFFE0E0E0),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 4,
+                                    ),
+                                    leading: _buildPeriodIcon(isSpecial: true),
+                                    title: Text(
+                                      'Select Another Period',
+                                      style: GoogleFonts.openSans(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF003366),
+                                      ),
+                                    ),
+                                    trailing: const Icon(
+                                      Icons.more_horiz,
+                                      color: Color(0xFF003366),
+                                      size: 24,
+                                    ),
+                                    onTap: () {},
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =======================================================================
+// WIDGET ANIMASI CUSTOM UNTUK LOGO BCA SAAT LOADING
+// =======================================================================
+class _AnimatedBCALogo extends StatefulWidget {
+  const _AnimatedBCALogo({Key? key}) : super(key: key);
+
+  @override
+  __AnimatedBCALogoState createState() => __AnimatedBCALogoState();
+}
+
+class __AnimatedBCALogoState extends State<_AnimatedBCALogo>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    // Durasi putaran
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat(); // Menggunakan repeat agar terus berputar ke satu arah
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Kita simpan child berupa gambar ke dalam sebuah variable agar efisien dan bisa dipakai 2x
+    final Widget logoAsset = Image.asset(
+      'assets/images/logo_bca_icon.png', // Menggunakan asset dari Anda
+      width: 80,
+      height: 80,
+      fit: BoxFit.contain,
+    );
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // =================================================================
+            // LAYER 1: Efek potongan "Benar-benar terputus"
+            // =================================================================
+            ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return SweepGradient(
+                  colors: const [
+                    Colors.transparent, // Terputus / Kosong
+                    Colors
+                        .transparent, // Mempertahankan ruang kosong (tanpa bayangan panjang)
+                    Colors.white, // Langsung Solid / Muncul penuh
+                    Colors.white, // Mengisi sisa lingkaran
+                  ],
+                  // Komposisi: 40% kosong (terputus), lalu langsung solid di 45%
+                  stops: const [0.0, 0.4, 0.45, 1.0],
+                  transform: GradientRotation(_controller.value * 2 * math.pi),
+                ).createShader(bounds);
+              },
+              // BlendMode.dstIn HANYA mengambil opacity gradient tanpa mengubah warna asli gambar
+              blendMode: BlendMode.dstIn,
+              child: logoAsset,
+            ),
+
+            // =================================================================
+            // LAYER 2: Sentuhan warna Kuning dan Biru di bagian paling ujung (kepala putaran)
+            // =================================================================
+            ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return SweepGradient(
+                  colors: const [
+                    Colors
+                        .transparent, // Bagian belakang (transparan tidak akan menimpa Layer 1)
+                    Colors.transparent,
+                    Color(0xFF005DAA), // Sentuhan Biru (BCA Blue)
+                    Color(
+                      0xFFF2C94C,
+                    ), // Sentuhan Kuning (BCA Yellow) di paling ujung
+                  ],
+                  // Hanya terlihat di bagian 85% sampai 100% (kepala rotasi)
+                  stops: const [0.0, 0.85, 0.95, 1.0],
+                  transform: GradientRotation(_controller.value * 2 * math.pi),
+                ).createShader(bounds);
+              },
+              // BlendMode.srcIn menimpa persis sesuai bentuk gambar (warna asli tertimpa gradient ini)
+              blendMode: BlendMode.srcIn,
+              child: logoAsset,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
