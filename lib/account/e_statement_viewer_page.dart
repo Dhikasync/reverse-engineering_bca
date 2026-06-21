@@ -12,11 +12,11 @@ class EStatementViewerPage extends StatefulWidget {
   final DateTime statementDate;
 
   const EStatementViewerPage({
-    Key? key,
+    super.key,
     required this.pdfPath,
     required this.accountNumber,
     required this.statementDate,
-  }) : super(key: key);
+  });
 
   @override
   State<EStatementViewerPage> createState() => _EStatementViewerPageState();

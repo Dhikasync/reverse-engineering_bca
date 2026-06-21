@@ -253,18 +253,18 @@ class _SettingsPageState extends State<SettingsPage> {
         int year = int.parse(parts[2]);
         String monthStr = parts[1].toLowerCase();
         int month = 1;
-        if (monthStr.startsWith('jan')) month = 1;
-        else if (monthStr.startsWith('feb')) month = 2;
-        else if (monthStr.startsWith('mar')) month = 3;
-        else if (monthStr.startsWith('apr')) month = 4;
-        else if (monthStr.startsWith('may') || monthStr.startsWith('mei')) month = 5;
-        else if (monthStr.startsWith('jun')) month = 6;
-        else if (monthStr.startsWith('jul')) month = 7;
-        else if (monthStr.startsWith('aug') || monthStr.startsWith('agu')) month = 8;
-        else if (monthStr.startsWith('sep')) month = 9;
-        else if (monthStr.startsWith('oct') || monthStr.startsWith('okt')) month = 10;
-        else if (monthStr.startsWith('nov')) month = 11;
-        else if (monthStr.startsWith('dec') || monthStr.startsWith('des')) month = 12;
+        if (monthStr.startsWith('jan')) { month = 1; }
+        else if (monthStr.startsWith('feb')) { month = 2; }
+        else if (monthStr.startsWith('mar')) { month = 3; }
+        else if (monthStr.startsWith('apr')) { month = 4; }
+        else if (monthStr.startsWith('may') || monthStr.startsWith('mei')) { month = 5; }
+        else if (monthStr.startsWith('jun')) { month = 6; }
+        else if (monthStr.startsWith('jul')) { month = 7; }
+        else if (monthStr.startsWith('aug') || monthStr.startsWith('agu')) { month = 8; }
+        else if (monthStr.startsWith('sep')) { month = 9; }
+        else if (monthStr.startsWith('oct') || monthStr.startsWith('okt')) { month = 10; }
+        else if (monthStr.startsWith('nov')) { month = 11; }
+        else if (monthStr.startsWith('dec') || monthStr.startsWith('des')) { month = 12; }
         return DateTime(year, month, day);
       } catch (e) {
         return DateTime.now();
@@ -297,13 +297,10 @@ class _SettingsPageState extends State<SettingsPage> {
               
               DateTime fileDate = parseDateSimple(transactions.first.dateOrStatus);
               
-              String monthStr = transactions.first.dateOrStatus.split('\n').length > 1 
-                  ? transactions.first.dateOrStatus.split('\n')[1] 
-                  : '';
               String monthYear = "${getIndonesianMonth(fileDate.month)} ${fileDate.year}";
               newMonthlyBalances[monthYear] = PdfParserService.detectedStartingBalance;
 
-              if (oldestDate == null || fileDate.isBefore(oldestDate!)) {
+              if (oldestDate == null || fileDate.isBefore(oldestDate)) {
                 oldestDate = fileDate;
                 oldestStartingBalance = PdfParserService.detectedStartingBalance;
               }
@@ -355,7 +352,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   PdfParserService.detectedAccountNumber;
             }
             if (oldestStartingBalance != null) {
-              _balanceController.text = oldestStartingBalance!.toStringAsFixed(0);
+              _balanceController.text = oldestStartingBalance.toStringAsFixed(0);
             } else {
               _balanceController.text = PdfParserService.detectedStartingBalance
                   .toStringAsFixed(0);
@@ -951,7 +948,8 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                           );
 
-                          if (confirm == true && mounted) {
+                          if (confirm == true) {
+                            if (!context.mounted) return;
                             Provider.of<TransactionProvider>(context, listen: false).clearTransactions();
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(

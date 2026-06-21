@@ -88,30 +88,31 @@ class _EStatementPageState extends State<EStatementPage> {
         : DateTime.now().year;
 
     int month = 1;
-    if (monthStr.contains('jan'))
+    if (monthStr.contains('jan')) {
       month = 1;
-    else if (monthStr.contains('feb'))
+    } else if (monthStr.contains('feb')) {
       month = 2;
-    else if (monthStr.contains('mar'))
+    } else if (monthStr.contains('mar')) {
       month = 3;
-    else if (monthStr.contains('apr'))
+    } else if (monthStr.contains('apr')) {
       month = 4;
-    else if (monthStr.contains('mei') || monthStr.contains('may'))
+    } else if (monthStr.contains('mei') || monthStr.contains('may')) {
       month = 5;
-    else if (monthStr.contains('jun'))
+    } else if (monthStr.contains('jun')) {
       month = 6;
-    else if (monthStr.contains('jul'))
+    } else if (monthStr.contains('jul')) {
       month = 7;
-    else if (monthStr.contains('agu') || monthStr.contains('aug'))
+    } else if (monthStr.contains('agu') || monthStr.contains('aug')) {
       month = 8;
-    else if (monthStr.contains('sep'))
+    } else if (monthStr.contains('sep')) {
       month = 9;
-    else if (monthStr.contains('okt') || monthStr.contains('oct'))
+    } else if (monthStr.contains('okt') || monthStr.contains('oct')) {
       month = 10;
-    else if (monthStr.contains('nov'))
+    } else if (monthStr.contains('nov')) {
       month = 11;
-    else if (monthStr.contains('des') || monthStr.contains('dec'))
+    } else if (monthStr.contains('des') || monthStr.contains('dec')) {
       month = 12;
+    }
 
     return DateTime(year, month);
   }
@@ -187,9 +188,14 @@ class _EStatementPageState extends State<EStatementPage> {
             style: PdfFontStyle.regular,
           );
 
-    final PdfPen linePen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
+    // Font bawaan (Helvetica) khusus untuk merender karakter bullet (•) yang sering hilang di custom font
+    final PdfFont fontBullet = PdfStandardFont(PdfFontFamily.helvetica, 6);
 
-    final PdfPen textBoldPen = PdfPen(PdfColor(0, 0, 0), width: 0.6);
+    // Anda bisa mengatur ketebalan garis/border kotak di sini (default 0.5, diubah ke 1.0 agar lebih tebal)
+    final PdfPen linePen = PdfPen(PdfColor(0, 0, 0), width: 1.0);
+
+    // Anda bisa mengatur ketebalan font bold di sini (semakin besar angkanya, semakin tebal)
+    final PdfPen textBoldPen = PdfPen(PdfColor(0, 0, 0), width: 0.15);
     final PdfBrush textBoldBrush = PdfBrushes.black;
 
     void drawBoldString(
@@ -205,7 +211,8 @@ class _EStatementPageState extends State<EStatementPage> {
         pen: customPen ?? textBoldPen,
         brush: textBoldBrush,
         bounds: bounds,
-        format: format ?? PdfStringFormat(characterSpacing: 0.5),
+        // Anda bisa mengatur letterSpacing (jarak antar huruf) di sini (misal: 1.0 hingga 1.5)
+        format: format ?? PdfStringFormat(characterSpacing: 1.2),
       );
     }
 
@@ -228,14 +235,25 @@ class _EStatementPageState extends State<EStatementPage> {
       widget.accountTypeDetail.toUpperCase(),
       fontTitle,
       const Rect.fromLTWH(0.0, 23.0, 595.0, 25.0),
-      format: PdfStringFormat(alignment: PdfTextAlignment.center),
-      customPen: PdfPen(PdfColor(0, 0, 0), width: 1.2),
+      // Tambahkan characterSpacing: 1.2 agar spasi hurufnya ikut renggang
+      format: PdfStringFormat(
+        alignment: PdfTextAlignment.center,
+        characterSpacing: 1.2,
+      ),
+      // Anda bisa mengatur ketebalan judul laporan (TAHAPAN BCA, dll) di sini:
+      customPen: PdfPen(PdfColor(0, 0, 0), width: 0.4),
     );
+
+    // Font khusus KCP/KCU yang ukurannya lebih kecil (ukuran 6, defaultnya 7)
+    final PdfFont fontBranch = fontData != null
+        ? PdfTrueTypeFont(fontData, 6, style: PdfFontStyle.bold)
+        : PdfStandardFont(PdfFontFamily.helvetica, 6, style: PdfFontStyle.bold);
 
     drawBoldString(
       provider.branch,
-      fontBold,
-      const Rect.fromLTWH(35.0, 55.0, 200.0, 10.0),
+      fontBranch,
+      // Mendekatkan jarak KCP ke garis kotak (diubah dari 55.0 menjadi 62.0)
+      const Rect.fromLTWH(35.0, 62.0, 200.0, 10.0),
     );
 
     double boxY = 72.0;
@@ -347,7 +365,7 @@ class _EStatementPageState extends State<EStatementPage> {
     );
 
     double catBoxY = 176.0;
-    double catBoxHeight = 65.0;
+    double catBoxHeight = 72.0;
 
     _drawRoundedRect(
       graphics,
@@ -366,38 +384,34 @@ class _EStatementPageState extends State<EStatementPage> {
     final PdfStringFormat justifyFormat = PdfStringFormat(
       alignment: PdfTextAlignment.justify,
       lineSpacing: 5.0,
-      characterSpacing: 0.5,
+      characterSpacing: 1.3,
     );
 
-    final PdfStringFormat bulletFormat = PdfStringFormat(characterSpacing: 0.5);
-
-    graphics.drawString(
-      '•',
-      fontCatatanBody,
-      bounds: Rect.fromLTWH(32.0, catBoxY + 18.0, 10.0, 10.0),
-      format: bulletFormat,
+    // Menggambar titik peluru manual (lingkaran solid) karena karakter font sering gagal
+    graphics.drawEllipse(
+      Rect.fromLTWH(32.0, catBoxY + 19.5, 2.5, 2.5),
+      brush: PdfBrushes.black,
     );
     graphics.drawString(
       'Apabila nasabah tidak melakukan sanggahan atas Laporan Mutasi Rekening ini sampai dengan akhir bulan berikutnya, nasabah dianggap telah menyetujui segala data yang tercantum pada Laporan Mutasi Rekening ini.',
       fontCatatanBody,
-      bounds: Rect.fromLTWH(40.0, catBoxY + 18.0, 240.0, 45.0),
+      bounds: Rect.fromLTWH(40.0, catBoxY + 18.0, 240.0, 70.0),
       format: justifyFormat,
     );
 
-    graphics.drawString(
-      '•',
-      fontCatatanBody,
-      bounds: Rect.fromLTWH(310.0, catBoxY + 18.0, 10.0, 10.0),
-      format: bulletFormat,
+    // Titik peluru manual kedua
+    graphics.drawEllipse(
+      Rect.fromLTWH(310.0, catBoxY + 19.5, 2.5, 2.5),
+      brush: PdfBrushes.black,
     );
     graphics.drawString(
       'BCA berhak setiap saat melakukan koreksi apabila ada kesalahan pada Laporan Mutasi Rekening.',
       fontCatatanBody,
-      bounds: Rect.fromLTWH(318.0, catBoxY + 18.0, 240.0, 45.0),
+      bounds: Rect.fromLTWH(318.0, catBoxY + 18.0, 240.0, 70.0),
       format: justifyFormat,
     );
 
-    double tableHeaderY = 252.0;
+    double tableHeaderY = 260.0;
     double headerH = 20.0;
 
     _drawRoundedRect(
@@ -484,6 +498,7 @@ class _EStatementPageState extends State<EStatementPage> {
 
     // 2. Beri waktu sejenak agar UI sempat me-render dialog loading
     await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
 
     try {
       final provider = Provider.of<TransactionProvider>(context, listen: false);
@@ -564,7 +579,10 @@ class _EStatementPageState extends State<EStatementPage> {
         }
       }
 
-      double startingBalanceForMonth = provider.getStartingBalanceForMonth(targetShortMonth, targetYear);
+      double startingBalanceForMonth = provider.getStartingBalanceForMonth(
+        targetShortMonth,
+        targetYear,
+      );
       List<TransactionModel> targetTransactions = [];
 
       for (var tx in chronologicalTransactions) {
@@ -587,15 +605,8 @@ class _EStatementPageState extends State<EStatementPage> {
       document.pageSettings.size = PdfPageSize.a4;
       document.pageSettings.margins.all = 0;
 
-      List<int>? fontData;
-      try {
-        final ByteData bd = await rootBundle.load(
-          'assets/fonts/UntitleddTTF.ttf',
-        );
-        fontData = bd.buffer.asUint8List();
-      } catch (e) {
-        debugPrint('Font tidak ditemukan: $e');
-      }
+      // Tidak lagi mencoba memuat bca-sans.ttf karena file tidak ada
+      List<int>? fontData = null;
 
       final PdfFont fontRegular = fontData != null
           ? PdfTrueTypeFont(fontData, 7)
@@ -625,7 +636,7 @@ class _EStatementPageState extends State<EStatementPage> {
       int countDb = 0;
 
       PdfPage currentPage = document.pages.add();
-      double currentY = 282.0;
+      double currentY = 290.0;
 
       String getMonthNumberFromPeriod(String p) {
         final m = p.toLowerCase();

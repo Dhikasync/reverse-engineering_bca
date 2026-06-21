@@ -79,7 +79,10 @@ flutter:
   fonts:
     - family: MyBcaFont
       fonts:
-        - asset: assets/fonts/UntitleddTTF.ttf
+        - asset: assets/fonts/Sans.ttf
+    - family: BCASans
+      fonts:
+        - asset: assets/fonts/Sans.ttf
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
