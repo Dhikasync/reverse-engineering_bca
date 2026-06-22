@@ -50,7 +50,7 @@ class TransactionProvider with ChangeNotifier {
   }
   
   double getStartingBalanceForMonth(String month, String year) {
-    String indoMonth = _mapMonthToIndonesian(month);
+    String indoMonth = mapMonthToIndonesian(month);
     return _monthlyStartingBalances["$indoMonth $year"] ?? _startingBalance;
   }
 
@@ -103,6 +103,18 @@ class TransactionProvider with ChangeNotifier {
     return DateTime(2000);
   }
 
+  /// Mendapatkan string bulan dan tahun untuk pengelompokan UI, misal: "Maret 2023"
+  String getTransactionMonthYear(TransactionModel tx) {
+    final parts = tx.dateOrStatus.split('\n');
+    if (parts.length >= 3) {
+      String monthShort = parts[1];
+      String year = parts[2];
+      String indoMonth = mapMonthToIndonesian(monthShort);
+      return "$indoMonth $year";
+    }
+    return "Lainnya";
+  }
+
   /// Sort transactions newest first (descending by date).
   void _sortTransactions() {
     _transactions.sort((a, b) {
@@ -123,7 +135,7 @@ class TransactionProvider with ChangeNotifier {
       if (parts.length >= 3) {
         String monthShort = parts[1];
         String year = parts[2];
-        String indoMonth = _mapMonthToIndonesian(monthShort);
+        String indoMonth = mapMonthToIndonesian(monthShort);
         periodsSet.add("$indoMonth $year");
       }
     }
@@ -148,7 +160,7 @@ class TransactionProvider with ChangeNotifier {
   }
 
   // Fungsi Helper menerjemahkan bulan ke Bahasa Indonesia
-  String _mapMonthToIndonesian(String monthShort) {
+  String mapMonthToIndonesian(String monthShort) {
     switch (monthShort.toLowerCase()) {
       case 'jan':
         return 'Januari';

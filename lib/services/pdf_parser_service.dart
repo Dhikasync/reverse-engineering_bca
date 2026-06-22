@@ -352,6 +352,7 @@ class PdfParserService {
                 r'TARIKAN\s+ATM|'
                 r'TARIKAN\s+TUNAI|'
                 r'SWITCHING\s+(?:DB|CR)\s+TRANSFER[^\d/]*\d*|'
+                r'SWITCHING|'
                 r'BIAYA\s+ADM|'
                 r'PAJAK\s+BUNGA|'
                 r'BUNGA|'

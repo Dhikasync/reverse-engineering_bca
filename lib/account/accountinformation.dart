@@ -162,12 +162,14 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                           ),
                           child: TabBar(
                             controller: _tabController,
+                            isScrollable: true,
+                            tabAlignment: TabAlignment.start,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12.0,
                             ),
                             indicatorSize: TabBarIndicatorSize.tab,
                             labelPadding: const EdgeInsets.symmetric(
-                              horizontal: 2.0,
+                              horizontal: 26.0,
                             ),
                             labelColor: const Color(0xFF00529C),
                             unselectedLabelColor: Colors.grey.shade500,
@@ -183,13 +185,17 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                             ),
                             tabs: const [
                               Tab(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text('Account Transactions'),
-                                ),
+                                height: 60.0,
+                                child: Text('Account Transactions'),
                               ),
-                              Tab(text: 'Card'),
-                              Tab(text: 'Pocket'),
+                              Tab(
+                                height: 60.0,
+                                text: 'Card',
+                              ),
+                              Tab(
+                                height: 60.0,
+                                text: 'Pocket',
+                              ),
                             ],
                           ),
                         ),

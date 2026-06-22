@@ -11,6 +11,8 @@ class ManageTransactionsPage extends StatefulWidget {
 }
 
 class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
+  String _selectedFilter = 'All';
+
   void _showTransactionBottomSheet(
     BuildContext context,
     TransactionProvider provider, {
@@ -22,12 +24,10 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
     final TextEditingController dateController = TextEditingController(
       text: isEdit ? tx.dateOrStatus : '',
     );
-    final TextEditingController keteranganKiriController = TextEditingController(
-      text: isEdit ? tx.keteranganKiri : '',
-    );
-    final TextEditingController keteranganKananController = TextEditingController(
-      text: isEdit ? tx.keteranganKanan : '',
-    );
+    final TextEditingController keteranganKiriController =
+        TextEditingController(text: isEdit ? tx.keteranganKiri : '');
+    final TextEditingController keteranganKananController =
+        TextEditingController(text: isEdit ? tx.keteranganKanan : '');
     final TextEditingController subtitleController = TextEditingController(
       text: isEdit ? tx.subtitle : 'DEBIT TRANSACTION',
     );
@@ -86,7 +86,10 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                             onTap: () {
                               setStateSheet(() {
                                 isDebit = true;
-                                if (!isEdit || subtitleController.text.endsWith('TRANSACTION')) {
+                                if (!isEdit ||
+                                    subtitleController.text.endsWith(
+                                      'TRANSACTION',
+                                    )) {
                                   subtitleController.text = 'DEBIT TRANSACTION';
                                 }
                               });
@@ -94,10 +97,14 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: isDebit ? Colors.red.shade100 : Colors.grey.shade100,
+                                color: isDebit
+                                    ? Colors.red.shade100
+                                    : Colors.grey.shade100,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: isDebit ? Colors.red : Colors.transparent,
+                                  color: isDebit
+                                      ? Colors.red
+                                      : Colors.transparent,
                                   width: 2,
                                 ),
                               ),
@@ -106,7 +113,9 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                                 'DEBIT',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: isDebit ? Colors.red.shade800 : Colors.grey.shade600,
+                                  color: isDebit
+                                      ? Colors.red.shade800
+                                      : Colors.grey.shade600,
                                 ),
                               ),
                             ),
@@ -118,18 +127,26 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                             onTap: () {
                               setStateSheet(() {
                                 isDebit = false;
-                                if (!isEdit || subtitleController.text.endsWith('TRANSACTION')) {
-                                  subtitleController.text = 'CREDIT TRANSACTION';
+                                if (!isEdit ||
+                                    subtitleController.text.endsWith(
+                                      'TRANSACTION',
+                                    )) {
+                                  subtitleController.text =
+                                      'CREDIT TRANSACTION';
                                 }
                               });
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: !isDebit ? Colors.green.shade100 : Colors.grey.shade100,
+                                color: !isDebit
+                                    ? Colors.green.shade100
+                                    : Colors.grey.shade100,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: !isDebit ? Colors.green : Colors.transparent,
+                                  color: !isDebit
+                                      ? Colors.green
+                                      : Colors.transparent,
                                   width: 2,
                                 ),
                               ),
@@ -138,7 +155,9 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                                 'CREDIT',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: !isDebit ? Colors.green.shade800 : Colors.grey.shade600,
+                                  color: !isDebit
+                                      ? Colors.green.shade800
+                                      : Colors.grey.shade600,
                                 ),
                               ),
                             ),
@@ -181,7 +200,9 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                       label: 'Amount',
                       hint: 'Example: 50,000.00',
                       icon: Icons.attach_money,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                     ),
                     const SizedBox(height: 24),
 
@@ -200,12 +221,18 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                         if (isEdit && index != null) {
                           provider.updateTransaction(index, newTx);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Transaction updated successfully')),
+                            const SnackBar(
+                              content: Text('Transaction updated successfully'),
+                            ),
                           );
                         } else {
                           provider.addTransaction(newTx);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('New transaction added successfully')),
+                            const SnackBar(
+                              content: Text(
+                                'New transaction added successfully',
+                              ),
+                            ),
                           );
                         }
                         Navigator.pop(context);
@@ -256,7 +283,10 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
         prefixIcon: Icon(icon, color: Colors.grey.shade600),
         filled: true,
         fillColor: Colors.grey.shade50,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.grey.shade300),
@@ -288,14 +318,18 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
       ),
       body: Consumer<TransactionProvider>(
         builder: (context, provider, child) {
-          final transactions = provider.transactions;
+          final allTransactions = provider.transactions;
 
-          if (transactions.isEmpty) {
+          if (allTransactions.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.receipt_long, size: 80, color: Colors.grey.shade400),
+                  Icon(
+                    Icons.receipt_long,
+                    size: 80,
+                    color: Colors.grey.shade400,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No transactions yet.',
@@ -315,136 +349,275 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 12, bottom: 100),
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              final tx = transactions[index];
-              return Dismissible(
-                key: UniqueKey(),
-                direction: DismissDirection.endToStart,
-                background: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade400,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 24),
-                  child: const Icon(Icons.delete_outline, color: Colors.white, size: 30),
-                ),
-                onDismissed: (direction) {
-                  provider.deleteTransaction(index);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Transaction deleted'),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      action: SnackBarAction(
-                        label: 'UNDO',
-                        textColor: Colors.white,
-                        onPressed: () {
-                          provider.addTransaction(tx);
-                        },
-                      ),
-                    ),
-                  );
-                },
-                child: Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: Colors.grey.shade200),
-                  ),
+          final uploadedMonths = provider.uploadedMonths;
+          final List<String> filterOptions = ['All', ...uploadedMonths];
+          if (!filterOptions.contains(_selectedFilter)) {
+            _selectedFilter = 'All';
+          }
+
+          final List<TransactionModel> displayTransactions =
+              _selectedFilter == 'All'
+              ? allTransactions
+              : allTransactions.where((tx) {
+                  return provider.getTransactionMonthYear(tx) ==
+                      _selectedFilter;
+                }).toList();
+
+          return Column(
+            children: [
+              // Filter Bar
+              if (uploadedMonths.isNotEmpty)
+                Container(
+                  height: 60,
                   color: Colors.white,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () => _showTransactionBottomSheet(
-                      context,
-                      provider,
-                      index: index,
-                      tx: tx,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          // Transaction Icon
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: tx.isDebit ? Colors.red.shade50 : Colors.green.shade50,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              tx.isDebit ? Icons.arrow_outward : Icons.south_west,
-                              color: tx.isDebit ? Colors.red.shade600 : Colors.green.shade600,
-                              size: 24,
-                            ),
+                    itemCount: filterOptions.length,
+                    itemBuilder: (context, index) {
+                      final option = filterOptions[index];
+                      final isSelected = _selectedFilter == option;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          label: Text(option),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                _selectedFilter = option;
+                              });
+                            }
+                          },
+                          selectedColor: const Color(0xFF005BAC),
+                          backgroundColor: Colors.grey.shade200,
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : Colors.black87,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
-                          const SizedBox(width: 16),
-                          
-                          // Transaction Details
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  tx.keteranganKiri.isNotEmpty ? tx.keteranganKiri : 'No Title',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
-                                    color: Colors.black87,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  tx.dateOrStatus.replaceAll('\n', ' '),
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? const Color(0xFF005BAC)
+                                  : Colors.transparent,
                             ),
                           ),
-                          
-                          // Amount & Edit Icon
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                tx.amount,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: tx.isDebit ? Colors.red.shade700 : Colors.green.shade700,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Icon(
-                                Icons.edit_note,
-                                color: Colors.grey.shade400,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              );
-            },
+
+              // Transaction List
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(top: 12, bottom: 100),
+                  itemCount: displayTransactions.length,
+                  itemBuilder: (context, index) {
+                    final tx = displayTransactions[index];
+                    final currentTxMonth = provider.getTransactionMonthYear(tx);
+                    final actualIndex = allTransactions.indexOf(
+                      tx,
+                    ); // Get the real index for CRUD
+
+                    bool showHeader = false;
+                    if (_selectedFilter == 'All') {
+                      if (index == 0) {
+                        showHeader = true;
+                      } else {
+                        final prevTx = displayTransactions[index - 1];
+                        final prevTxMonth = provider.getTransactionMonthYear(
+                          prevTx,
+                        );
+                        if (currentTxMonth != prevTxMonth) {
+                          showHeader = true;
+                        }
+                      }
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (showHeader)
+                          Container(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                            color: Colors.grey.shade100,
+                            child: Text(
+                              currentTxMonth,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade700,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                        Dismissible(
+                          key: UniqueKey(),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade400,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 24),
+                            child: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          ),
+                          onDismissed: (direction) {
+                            provider.deleteTransaction(actualIndex);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('Transaction deleted'),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                action: SnackBarAction(
+                                  label: 'UNDO',
+                                  textColor: Colors.white,
+                                  onPressed: () {
+                                    provider.addTransaction(tx);
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: Colors.grey.shade200),
+                            ),
+                            color: Colors.white,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => _showTransactionBottomSheet(
+                                context,
+                                provider,
+                                index: actualIndex,
+                                tx: tx,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Row(
+                                  children: [
+                                    // Transaction Icon
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: tx.isDebit
+                                            ? Colors.red.shade50
+                                            : Colors.green.shade50,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        tx.isDebit
+                                            ? Icons.arrow_outward
+                                            : Icons.south_west,
+                                        color: tx.isDebit
+                                            ? Colors.red.shade600
+                                            : Colors.green.shade600,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+
+                                    // Transaction Details
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            tx.keteranganKiri.isNotEmpty
+                                                ? tx.keteranganKiri
+                                                : 'No Title',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15,
+                                              color: Colors.black87,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            tx.dateOrStatus.replaceAll(
+                                              '\n',
+                                              ' ',
+                                            ),
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    // Amount & Edit Icon
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          tx.amount,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15,
+                                            color: tx.isDebit
+                                                ? Colors.red.shade700
+                                                : Colors.green.shade700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Icon(
+                                          Icons.edit_note,
+                                          color: Colors.grey.shade400,
+                                          size: 20,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          final provider = Provider.of<TransactionProvider>(context, listen: false);
+          final provider = Provider.of<TransactionProvider>(
+            context,
+            listen: false,
+          );
           _showTransactionBottomSheet(context, provider);
         },
         backgroundColor: const Color(0xFF005BAC),
