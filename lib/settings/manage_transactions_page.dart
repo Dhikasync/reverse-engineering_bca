@@ -21,8 +21,15 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
   }) {
     final isEdit = tx != null;
 
-    final TextEditingController dateController = TextEditingController(
-      text: isEdit ? tx.dateOrStatus : '',
+    List<String> dateParts = tx != null ? tx.dateOrStatus.split('\n') : [];
+    final TextEditingController dayController = TextEditingController(
+      text: dateParts.isNotEmpty ? dateParts[0] : '',
+    );
+    final TextEditingController monthController = TextEditingController(
+      text: dateParts.length > 1 ? dateParts[1] : '',
+    );
+    final TextEditingController yearController = TextEditingController(
+      text: dateParts.length > 2 ? dateParts[2] : '',
     );
     final TextEditingController keteranganKiriController =
         TextEditingController(text: isEdit ? tx.keteranganKiri : '');
@@ -168,18 +175,61 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                     const SizedBox(height: 24),
 
                     // Forms
-                    _buildTextField(
-                      controller: dateController,
-                      label: 'Date / Status',
-                      hint: 'Example: 15\\nMAY\\n2023',
-                      icon: Icons.calendar_today,
-                      maxLines: null,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: _buildTextField(
+                            controller: dayController,
+                            label: 'Day/Status',
+                            hint: '15',
+                            icon: Icons.calendar_today,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 3,
+                          child: _buildTextField(
+                            controller: monthController,
+                            label: 'Month',
+                            hint: 'MAY',
+                            icon: Icons.date_range,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: _buildTextField(
+                            controller: yearController,
+                            label: 'Year',
+                            hint: '2023',
+                            icon: Icons.calendar_month,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: keteranganKiriController,
                       label: 'Title (Keterangan Kiri)',
                       icon: Icons.title,
+                      dropdownOptions: const [
+                        'TRSF E-BANKING CR',
+                        'TRSF E-BANKING DB',
+                        'SWITCHING',
+                        'SWITCHING DB TRANSFER',
+                        'SWITCHING CR TRANSFER',
+                        'BIAYA ADM',
+                        'PAJAK BUNGA',
+                        'TARIKAN ATM',
+                        'SETORAN TUNAI',
+                        'SETORAN VIA CDM',
+                        'KOR. DEBET',
+                        'KR OTOMATIS',
+                        'BI-FAST DB',
+                        'BI-FAST CR',
+                      ],
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
@@ -209,8 +259,17 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                     // Save Button
                     ElevatedButton(
                       onPressed: () {
+                        String finalDate = '';
+                        if (dayController.text.isNotEmpty && monthController.text.isNotEmpty && yearController.text.isNotEmpty) {
+                          finalDate = '${dayController.text}\n${monthController.text}\n${yearController.text}';
+                        } else if (dayController.text.isNotEmpty && monthController.text.isNotEmpty) {
+                          finalDate = '${dayController.text}\n${monthController.text}';
+                        } else {
+                          finalDate = dayController.text;
+                        }
+
                         final newTx = TransactionModel(
-                          dateOrStatus: dateController.text,
+                          dateOrStatus: finalDate,
                           keteranganKiri: keteranganKiriController.text,
                           keteranganKanan: keteranganKananController.text,
                           subtitle: subtitleController.text,
@@ -272,6 +331,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
     String? hint,
     int? maxLines = 1,
     TextInputType? keyboardType,
+    List<String>? dropdownOptions,
   }) {
     return TextFormField(
       controller: controller,
@@ -281,6 +341,22 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
         labelText: label,
         hintText: hint,
         prefixIcon: Icon(icon, color: Colors.grey.shade600),
+        suffixIcon: dropdownOptions != null
+            ? PopupMenuButton<String>(
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                onSelected: (String value) {
+                  controller.text = value;
+                },
+                itemBuilder: (BuildContext context) {
+                  return dropdownOptions.map((String option) {
+                    return PopupMenuItem<String>(
+                      value: option,
+                      child: Text(option),
+                    );
+                  }).toList();
+                },
+              )
+            : null,
         filled: true,
         fillColor: Colors.grey.shade50,
         contentPadding: const EdgeInsets.symmetric(
