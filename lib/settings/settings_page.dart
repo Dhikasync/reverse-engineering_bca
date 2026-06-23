@@ -297,8 +297,7 @@ class _SettingsPageState extends State<SettingsPage> {
               
               DateTime fileDate = parseDateSimple(transactions.first.dateOrStatus);
               
-              String monthYear = "${getIndonesianMonth(fileDate.month)} ${fileDate.year}";
-              newMonthlyBalances[monthYear] = PdfParserService.detectedStartingBalance;
+              newMonthlyBalances.addAll(PdfParserService.detectedMonthlyBalances);
 
               if (oldestDate == null || fileDate.isBefore(oldestDate)) {
                 oldestDate = fileDate;

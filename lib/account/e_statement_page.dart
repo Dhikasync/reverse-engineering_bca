@@ -741,11 +741,11 @@ class _EStatementPageState extends State<EStatementPage> {
             ? leftLines.length
             : rightLines.length;
         if (maxLines == 0) maxLines = 1;
-        // Mengurangi sedikit padding antar baris agar muat lebih banyak transaksi (menyesuaikan format asli)
-        double rowHeight = 12.0 * maxLines + 3.0;
+        // Mengurangi padding antar baris agar muat lebih banyak transaksi (menyesuaikan format asli)
+        double rowHeight = 9.5 * maxLines + 2.0;
 
-        // Memaksimalkan margin bawah hingga 780.0 (sebelumnya 755.0)
-        if (currentY + rowHeight > 780.0) {
+        // Memaksimalkan margin bawah hingga 795.0
+        if (currentY + rowHeight > 795.0) {
           currentPage.graphics.drawString(
             'Bersambung ke halaman berikut',
             fontItalic,
@@ -767,7 +767,7 @@ class _EStatementPageState extends State<EStatementPage> {
           currentPage.graphics.drawString(
             leftLines[i],
             fontRegular,
-            bounds: Rect.fromLTWH(85.0, currentY + (i * 12.0), 105.0, 10.0),
+            bounds: Rect.fromLTWH(85.0, currentY + (i * 9.5), 105.0, 10.0),
           );
         }
 
@@ -775,7 +775,7 @@ class _EStatementPageState extends State<EStatementPage> {
           currentPage.graphics.drawString(
             rightLines[i],
             fontRegular,
-            bounds: Rect.fromLTWH(195.0, currentY + (i * 12.0), 115.0, 10.0),
+            bounds: Rect.fromLTWH(195.0, currentY + (i * 9.5), 115.0, 10.0),
           );
         }
 
@@ -807,7 +807,7 @@ class _EStatementPageState extends State<EStatementPage> {
       }
 
       double summaryHeight = 80.0;
-      if (currentY + summaryHeight > 780.0) {
+      if (currentY + summaryHeight > 795.0) {
         currentPage.graphics.drawString(
           'Bersambung ke halaman berikut',
           fontItalic,

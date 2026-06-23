@@ -7,6 +7,16 @@ class PdfParserService {
   static String detectedMonth = "";
   static String detectedYear = "";
   static double detectedStartingBalance = 734147.95;
+  static Map<String, double> detectedMonthlyBalances = {};
+
+  static String getIndonesianMonthStr(int month) {
+    const months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    if (month >= 1 && month <= 12) return months[month - 1];
+    return '';
+  }
 
   static String detectedBranch = '';
   static String detectedName = '';
@@ -32,6 +42,8 @@ class PdfParserService {
     String? password,
   }) async {
     final List<TransactionModel> transactions = [];
+    detectedMonthlyBalances.clear();
+    double? tempStartingBalance;
 
     try {
       final bytes = await File(filePath).readAsBytes();
@@ -214,6 +226,7 @@ class PdfParserService {
           if (match != null) {
             final valStr = match.group(0)!.replaceAll(',', '');
             detectedStartingBalance = double.tryParse(valStr) ?? 734147.95;
+            tempStartingBalance = detectedStartingBalance;
           }
           return;
         }
@@ -252,6 +265,14 @@ class PdfParserService {
 
         String monthStr = monthNames[(monthIndex - 1).clamp(0, 11)];
         String formattedDate = '$day\n$monthStr\n$currentYear';
+
+        if (tempStartingBalance != null) {
+          String monthYearKey = "${getIndonesianMonthStr(monthIndex)} $currentYear";
+          if (!detectedMonthlyBalances.containsKey(monthYearKey)) {
+            detectedMonthlyBalances[monthYearKey] = tempStartingBalance!;
+          }
+          tempStartingBalance = null;
+        }
 
         int lastAmountLineIndex = -1;
         for (int i = currentBlock.length - 1; i >= 0; i--) {
