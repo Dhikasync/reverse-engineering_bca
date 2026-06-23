@@ -11,8 +11,18 @@ class PdfParserService {
 
   static String getIndonesianMonthStr(int month) {
     const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
     if (month >= 1 && month <= 12) return months[month - 1];
     return '';
@@ -55,12 +65,6 @@ class PdfParserService {
       // Extract full text WITH layout for transaction parsing
       String text = PdfTextExtractor(document).extractText(layoutText: true);
 
-      // Extract page 1 WITHOUT layout to get header info (branch, address, name)
-      // layoutText:false gives plain text without positional spaces
-      final String headerText = PdfTextExtractor(
-        document,
-      ).extractText(startPageIndex: 0, endPageIndex: 0, layoutText: false);
-
       String currentYear = DateTime.now().year.toString();
 
       detectedBranch = '';
@@ -69,14 +73,21 @@ class PdfParserService {
       detectedAddress = [];
 
       // Save first 60 lines of HEADER text for debugging
-      final linesForAddress = headerText.split('\n');
+      final linesForAddress = text.split('\n');
       lastRawTextPreview = linesForAddress.take(60).join('\n');
 
-      // Extract account type from the first non-empty line (e.g. "REKENING TAHAPAN")
-      for (final headerLine in linesForAddress) {
-        final trimmed = headerLine.trim();
-        if (trimmed.isNotEmpty) {
-          detectedAccountType = trimmed.toUpperCase();
+      // Extract account type from header lines
+      detectedAccountType = 'REKENING TAHAPAN'; // Default
+      for (int i = 0; i < 20 && i < linesForAddress.length; i++) {
+        final trimmed = linesForAddress[i].trim().toUpperCase();
+        if ((trimmed.contains('REKENING') && !trimmed.contains('NO.')) ||
+            trimmed.contains('TAHAPAN') ||
+            trimmed.contains('TAPRES') ||
+            trimmed.contains('GIRO') ||
+            trimmed.contains('XPRESI') ||
+            trimmed.contains('BCA DOLLAR') ||
+            trimmed.contains('BCA PRIORITAS')) {
+          detectedAccountType = trimmed;
           break;
         }
       }
@@ -93,6 +104,11 @@ class PdfParserService {
         String upperLine = line.toUpperCase();
         String leftPart = line.split(RegExp(r'\s{3,}'))[0].trim();
         String upperLeft = leftPart.toUpperCase();
+
+        if (upperLeft == detectedAccountType ||
+            upperLine == detectedAccountType) {
+          continue;
+        }
 
         if (!passedBCA) {
           if (upperLine.contains('BANK CENTRAL ASIA')) {
@@ -178,9 +194,7 @@ class PdfParserService {
         r'PERIODE\s*:.*?([A-Za-z]+)\s*(\d{4})',
         caseSensitive: false,
       );
-      // Try headerText first, fallback to full text
-      final periodMatch =
-          periodRegex.firstMatch(headerText) ?? periodRegex.firstMatch(text);
+      final periodMatch = periodRegex.firstMatch(text);
       if (periodMatch != null) {
         detectedMonth = periodMatch.group(1)!.toUpperCase();
         detectedYear = periodMatch.group(2)!;
@@ -188,8 +202,7 @@ class PdfParserService {
       }
 
       final accountRegex = RegExp(r'NO\.?\s*REKENING\s*:?\s*(\d+)');
-      final accountMatch =
-          accountRegex.firstMatch(headerText) ?? accountRegex.firstMatch(text);
+      final accountMatch = accountRegex.firstMatch(text);
       if (accountMatch != null) {
         detectedAccountNumber = accountMatch.group(1)!;
       }
@@ -267,7 +280,8 @@ class PdfParserService {
         String formattedDate = '$day\n$monthStr\n$currentYear';
 
         if (tempStartingBalance != null) {
-          String monthYearKey = "${getIndonesianMonthStr(monthIndex)} $currentYear";
+          String monthYearKey =
+              "${getIndonesianMonthStr(monthIndex)} $currentYear";
           if (!detectedMonthlyBalances.containsKey(monthYearKey)) {
             detectedMonthlyBalances[monthYearKey] = tempStartingBalance!;
           }

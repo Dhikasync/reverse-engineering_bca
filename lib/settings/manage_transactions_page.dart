@@ -18,6 +18,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
     TransactionProvider provider, {
     int? index,
     TransactionModel? tx,
+    bool isDuplicate = false,
   }) {
     final isEdit = tx != null;
 
@@ -70,7 +71,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          isEdit ? 'Edit Transaction' : 'New Transaction',
+                          isDuplicate ? 'Duplicate Transaction' : (isEdit ? 'Edit Transaction' : 'New Transaction'),
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -277,7 +278,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                           isDebit: isDebit,
                         );
 
-                        if (isEdit && index != null) {
+                        if (isEdit && !isDuplicate && index != null) {
                           provider.updateTransaction(index, newTx);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -666,10 +667,31 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                                           ),
                                         ),
                                         const SizedBox(height: 4),
-                                        Icon(
-                                          Icons.edit_note,
-                                          color: Colors.grey.shade400,
-                                          size: 20,
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            GestureDetector(
+                                              onTap: () {
+                                                _showTransactionBottomSheet(
+                                                  context,
+                                                  provider,
+                                                  tx: tx,
+                                                  isDuplicate: true,
+                                                );
+                                              },
+                                              child: Icon(
+                                                Icons.copy,
+                                                color: Colors.blue.shade400,
+                                                size: 20,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Icon(
+                                              Icons.edit_note,
+                                              color: Colors.grey.shade400,
+                                              size: 20,
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
