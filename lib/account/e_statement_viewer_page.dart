@@ -45,9 +45,14 @@ class _EStatementViewerPageState extends State<EStatementViewerPage> {
   Future<void> _sharePdf() async {
     try {
       final xFile = XFile(widget.pdfPath);
-      await Share.shareXFiles([
-        xFile,
-      ], text: 'Laporan Mutasi Rekening - $_generatedFileName');
+      final box = context.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [xFile],
+          text: 'Laporan Mutasi Rekening - $_generatedFileName',
+          sharePositionOrigin: box != null ? (box.localToGlobal(Offset.zero) & box.size) : null,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

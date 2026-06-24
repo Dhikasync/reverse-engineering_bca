@@ -119,7 +119,7 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                       onPressed: () => Navigator.pop(context),
                     ),
                     title: Text(
-                      'Account Information',
+                      'Informasi Rekening',
                       style: GoogleFonts.openSans(
                         color: Colors.white,
                         fontSize: 20,
@@ -186,15 +186,15 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                             tabs: const [
                               Tab(
                                 height: 60.0,
-                                child: Text('Account Transactions'),
+                                child: Text('Mutasi'),
                               ),
                               Tab(
                                 height: 60.0,
-                                text: 'Card',
+                                text: 'Kartu',
                               ),
                               Tab(
                                 height: 60.0,
-                                text: 'Pocket',
+                                text: 'Poket',
                               ),
                             ],
                           ),
@@ -220,13 +220,13 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                     _buildTransactionList(),
                     Center(
                       child: Text(
-                        'Card Information',
+                        'Informasi Kartu',
                         style: GoogleFonts.openSans(),
                       ),
                     ),
                     Center(
                       child: Text(
-                        'Pocket Information',
+                        'Informasi Tahapan Berjangka',
                         style: GoogleFonts.openSans(),
                       ),
                     ),
@@ -270,7 +270,7 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                     Icon(Icons.search, color: Colors.grey.shade500, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Search',
+                      'Cari',
                       style: GoogleFonts.openSans(color: Colors.grey.shade400),
                     ),
                   ],
@@ -350,43 +350,43 @@ class _AccountInformationPageState extends State<AccountInformationPage>
     if (transactions.isEmpty) {
       return Center(
         child: Text(
-          'No transactions.\nUpload e-Statement in Settings.',
+          'Tidak ada transaksi.\nUnggah e-Statement di Pengaturan.',
           textAlign: TextAlign.center,
           style: GoogleFonts.openSans(color: Colors.grey),
         ),
       );
     }
 
-    String mapMonthToEnglish(String monthShort) {
+    String mapMonthToIndonesian(String monthShort) {
       switch (monthShort.toLowerCase()) {
         case 'jan':
-          return 'January';
+          return 'Januari';
         case 'feb':
-          return 'February';
+          return 'Februari';
         case 'mar':
-          return 'March';
+          return 'Maret';
         case 'apr':
           return 'April';
         case 'may':
         case 'mei':
-          return 'May';
+          return 'Mei';
         case 'jun':
-          return 'June';
+          return 'Juni';
         case 'jul':
-          return 'July';
+          return 'Juli';
         case 'aug':
         case 'agu':
-          return 'August';
+          return 'Agustus';
         case 'sep':
           return 'September';
         case 'oct':
         case 'okt':
-          return 'October';
+          return 'Oktober';
         case 'nov':
           return 'November';
         case 'dec':
         case 'des':
-          return 'December';
+          return 'Desember';
         default:
           return monthShort;
       }
@@ -405,8 +405,8 @@ class _AccountInformationPageState extends State<AccountInformationPage>
         List<String> parts = tx.dateOrStatus.split('\n');
         if (parts.length >= 3) {
           String monthShort = parts[1];
-          String engMonth = mapMonthToEnglish(monthShort);
-          displayMonth = engMonth;
+          String indoMonth = mapMonthToIndonesian(monthShort);
+          displayMonth = indoMonth;
 
           if (index == 0) {
             showHeader = true;
@@ -415,8 +415,8 @@ class _AccountInformationPageState extends State<AccountInformationPage>
             List<String> prevParts = prevTx.dateOrStatus.split('\n');
             if (prevParts.length >= 3) {
               String prevMonthShort = prevParts[1];
-              String prevEngMonth = mapMonthToEnglish(prevMonthShort);
-              String prevDisplayMonth = prevEngMonth;
+              String prevIndoMonth = mapMonthToIndonesian(prevMonthShort);
+              String prevDisplayMonth = prevIndoMonth;
 
               if (displayMonth != prevDisplayMonth) {
                 showHeader = true;
@@ -539,7 +539,7 @@ class _AccountCardDelegate extends SliverPersistentHeaderDelegate {
   @override
   double get minExtent => 84.0;
   @override
-  double get maxExtent => 192.0;
+  double get maxExtent => 202.0;
 
   @override
   Widget build(
@@ -644,14 +644,14 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
       'Feb',
       'Mar',
       'Apr',
-      'May',
+      'Mei',
       'Jun',
       'Jul',
-      'Aug',
+      'Agt',
       'Sep',
-      'Oct',
+      'Okt',
       'Nov',
-      'Dec',
+      'Des',
     ];
     String pad(int n) => n.toString().padLeft(2, '0');
 
@@ -696,7 +696,7 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
 
   @override
   Widget build(BuildContext context) {
-    double cardHeight = 160.0 - (100.0 * widget.shrinkProgress);
+    double cardHeight = 170.0 - (110.0 * widget.shrinkProgress);
     double dynamicRadius = 16.0;
 
     return SizedBox(
@@ -723,14 +723,20 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                 top: 60 - (60 * widget.shrinkProgress),
                 left: 0,
                 right: 0,
-                height: 100,
+                height: 110,
                 child: Opacity(
                   opacity: (1.0 - (widget.shrinkProgress * 1.5)).clamp(
                     0.0,
                     1.0,
                   ),
                   child: Container(
-                    color: Colors.white,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(dynamicRadius),
+                        bottomRight: Radius.circular(dynamicRadius),
+                      ),
+                    ),
                     padding: const EdgeInsets.only(
                       left: 16.0,
                       right: 16.0,
@@ -740,10 +746,11 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Active Balance',
+                          'Saldo Aktif',
                           style: GoogleFonts.openSans(
-                            color: Colors.grey.shade500,
+                            color: const Color(0xFF333333),
                             fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -809,14 +816,15 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                           style: GoogleFonts.openSans(
                             color: Colors.grey.shade700,
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         Text(
                           _currentUtcTime,
                           style: GoogleFonts.openSans(
-                            color: Colors.grey.shade500,
+                            color: Colors.grey.shade600,
                             fontSize: 10,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -840,10 +848,11 @@ class _AccountInfoCardState extends State<AccountInfoCard> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Account No.',
+                        'No. Rekening',
                         style: GoogleFonts.openSans(
                           color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -984,31 +993,31 @@ class TransactionTile extends StatelessWidget {
           Text(
             parts[0],
             style: GoogleFonts.openSans(
-              color: const Color(0xFF333333).withValues(alpha: 0.5),
-              // --- PERUBAHAN: Mengurangi ketebalan ke w700 & mengatur ukuran hari ---
+              color: const Color.fromARGB(255, 182, 182, 182),
               fontWeight: FontWeight.w700,
-              fontSize: 28,
-              height: 1.1,
+              fontSize: 22,
+              height: 1.2,
             ),
           ),
           const SizedBox(height: 2),
           Text(
-            parts[1].toUpperCase(),
+            parts[1].isNotEmpty
+                ? parts[1][0].toUpperCase() +
+                    parts[1].substring(1).toLowerCase()
+                : '',
             style: GoogleFonts.openSans(
-              color: Colors.grey.shade500.withValues(alpha: 0.5),
-              // --- PERUBAHAN: Mengurangi ketebalan ke w700 & menyamakan ukuran bulan ke ukuran tahun ---
+              color: const Color.fromARGB(255, 182, 182, 182),
               fontWeight: FontWeight.w700,
-              fontSize: 10,
-              height: 1.0,
+              fontSize: 16,
+              height: 1.6,
             ),
           ),
           Text(
             parts[2],
             style: GoogleFonts.openSans(
-              color: Colors.grey.shade500.withValues(alpha: 0.5),
-              // --- PERUBAHAN: Mengurangi ketebalan ke w700 & mempertahankan ukuran tahun asli ---
+              color: const Color.fromARGB(255, 182, 182, 182),
               fontWeight: FontWeight.w700,
-              fontSize: 10,
+              fontSize: 14,
               height: 1.0,
             ),
           ),

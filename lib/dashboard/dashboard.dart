@@ -50,7 +50,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       if (i > 0 && i % 3 == 0) {
         if (digits.length - i == 1) {
         } else {
-          result += '-';
+          result += ' - ';
         }
       }
       result += digits[i];
@@ -187,7 +187,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       ),
       child: RichText(
         text: TextSpan(
-          text: 'HELLO, ',
+          text: 'HALO, ',
           style: GoogleFonts.openSans(
             color: Colors.white,
             fontSize: 14.5 * scale,
@@ -274,7 +274,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                   Row(
                     children: [
                       Text(
-                        'Account: ${_formatAccountNumber(accountNumber)}',
+                        'Rekening: ${_formatAccountNumber(accountNumber)}',
                         style: GoogleFonts.openSans(
                           color: Colors.white,
                           fontSize: 15 * scale,
@@ -313,10 +313,11 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Active Balance',
+                        'Saldo Aktif',
                         style: GoogleFonts.openSans(
-                          color: Colors.grey,
-                          fontSize: 12 * scale,
+                          color: const Color(0xFF333333),
+                          fontSize: 15 * scale,
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                       SizedBox(height: 4 * scale),
@@ -394,7 +395,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                       ),
                       SizedBox(width: 8 * scale),
                       Text(
-                        'Account Transactions',
+                        'Mutasi Rekening',
                         style: GoogleFonts.openSans(
                           color: bcaBlue,
                           fontWeight: FontWeight.w700,
@@ -449,7 +450,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
           Row(
             children: [
               Text(
-                'Win Here',
+                'Menangkan di Sini',
                 style: GoogleFonts.openSans(
                   color: Colors.white,
                   fontSize: 14 * scale,
@@ -493,7 +494,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Main Menu',
+                  'Menu Utama',
                   style: GoogleFonts.openSans(
                     color: const Color(0xFF003D79),
                     fontSize: 18 * scale,
@@ -505,7 +506,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                     Icon(Icons.tune, color: bcaLightBlue, size: 16 * scale),
                     SizedBox(width: 4 * scale),
                     Text(
-                      'Manage',
+                      'Kelola',
                       style: GoogleFonts.openSans(
                         color: bcaLightBlue,
                         fontWeight: FontWeight.w700,
@@ -756,12 +757,12 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       {'customIcon': buildTransferIcon(), 'label': 'Transfer', 'isNew': false},
       {
         'customIcon': buildBayarIsiUlangIcon(),
-        'label': 'Pay & Reload',
+        'label': 'Bayar & Isi Ulang',
         'isNew': true,
       },
       {
         'customIcon': buildInvestasiIcon(),
-        'label': 'Investment',
+        'label': 'Investasi',
         'isNew': false,
       },
       {'customIcon': buildLifestyleIcon(), 'label': 'Lifestyle', 'isNew': true},
@@ -774,17 +775,17 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
       {'customIcon': buildCardlessIcon(), 'label': 'Cardless', 'isNew': false},
       {
         'customIcon': buildProdukPerbankanIcon(),
-        'label': 'Banking\nProducts',
+        'label': 'Produk\nPerbankan',
         'isNew': false,
       },
       {
         'customIcon': buildProteksiIcon(),
-        'label': 'Protection',
+        'label': 'Proteksi',
         'isNew': false,
       },
       {
         'customIcon': buildSemuaFiturIcon(),
-        'label': 'All Features',
+        'label': 'Semua Fitur',
         'isNew': false,
       },
     ];
@@ -840,7 +841,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                         borderRadius: BorderRadius.circular(6 * scale),
                       ),
                       child: Text(
-                        'NEW',
+                        'BARU',
                         style: GoogleFonts.openSans(
                           color: Colors.white,
                           fontSize: 7 * scale,
@@ -1070,7 +1071,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                     child: Center(
                       child: _buildNavItem(
                         Icons.account_balance,
-                        'Home',
+                        'Beranda',
                         isSelected: true,
                       ),
                     ),
@@ -1079,7 +1080,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                     child: Center(
                       child: _buildNavItem(
                         Icons.history,
-                        'Activity',
+                        'Aktivitas',
                         onTap: () {
                           Navigator.push(
                             context,
@@ -1122,7 +1123,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                     child: Center(
                       child: _buildNavItem(
                         null,
-                        'For You',
+                        'Untuk Anda',
                         customIcon: Builder(
                           builder: (context) {
                             final Color iconColor = Colors.white60;
@@ -1150,7 +1151,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                     child: Center(
                       child: _buildNavItem(
                         Icons.person_outline,
-                        'My Account',
+                        'Akun Saya',
                         onTap: () async {
                           final result = await Navigator.push(
                             context,

@@ -37,7 +37,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
     final TextEditingController keteranganKananController =
         TextEditingController(text: isEdit ? tx.keteranganKanan : '');
     final TextEditingController subtitleController = TextEditingController(
-      text: isEdit ? tx.subtitle : 'DEBIT TRANSACTION',
+      text: isEdit ? tx.subtitle : 'TRANSAKSI DEBIT',
     );
     final TextEditingController amountController = TextEditingController(
       text: isEdit ? tx.amount : 'IDR ',
@@ -71,7 +71,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          isDuplicate ? 'Duplicate Transaction' : (isEdit ? 'Edit Transaction' : 'New Transaction'),
+                          isDuplicate ? 'Duplikat Transaksi' : (isEdit ? 'Ubah Transaksi' : 'Transaksi Baru'),
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -97,8 +97,11 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                                 if (!isEdit ||
                                     subtitleController.text.endsWith(
                                       'TRANSACTION',
+                                    ) ||
+                                    subtitleController.text.endsWith(
+                                      'TRANSAKSI',
                                     )) {
-                                  subtitleController.text = 'DEBIT TRANSACTION';
+                                  subtitleController.text = 'TRANSAKSI DEBIT';
                                 }
                               });
                             },
@@ -138,9 +141,12 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                                 if (!isEdit ||
                                     subtitleController.text.endsWith(
                                       'TRANSACTION',
+                                    ) ||
+                                    subtitleController.text.endsWith(
+                                      'TRANSAKSI',
                                     )) {
                                   subtitleController.text =
-                                      'CREDIT TRANSACTION';
+                                      'TRANSAKSI KREDIT';
                                 }
                               });
                             },
@@ -160,7 +166,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                               ),
                               alignment: Alignment.center,
                               child: Text(
-                                'CREDIT',
+                                'KREDIT',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: !isDebit
@@ -183,7 +189,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                           flex: 2,
                           child: _buildTextField(
                             controller: dayController,
-                            label: 'Day/Status',
+                            label: 'Hari/Status',
                             hint: '15',
                             icon: Icons.calendar_today,
                           ),
@@ -193,8 +199,8 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                           flex: 3,
                           child: _buildTextField(
                             controller: monthController,
-                            label: 'Month',
-                            hint: 'MAY',
+                            label: 'Bulan',
+                            hint: 'MEI',
                             icon: Icons.date_range,
                           ),
                         ),
@@ -203,7 +209,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                           flex: 2,
                           child: _buildTextField(
                             controller: yearController,
-                            label: 'Year',
+                            label: 'Tahun',
                             hint: '2023',
                             icon: Icons.calendar_month,
                           ),
@@ -213,7 +219,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: keteranganKiriController,
-                      label: 'Title (Keterangan Kiri)',
+                      label: 'Judul (Keterangan Kiri)',
                       icon: Icons.title,
                       dropdownOptions: const [
                         'TRSF E-BANKING CR',
@@ -235,21 +241,21 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: keteranganKananController,
-                      label: 'Details (Keterangan Kanan)',
+                      label: 'Rincian (Keterangan Kanan)',
                       icon: Icons.notes,
                       maxLines: null,
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: subtitleController,
-                      label: 'Subtitle / Description',
+                      label: 'Subjudul / Deskripsi',
                       icon: Icons.subtitles,
                     ),
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: amountController,
-                      label: 'Amount',
-                      hint: 'Example: 50,000.00',
+                      label: 'Jumlah',
+                      hint: 'Contoh: 50,000.00',
                       icon: Icons.attach_money,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
@@ -282,7 +288,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                           provider.updateTransaction(index, newTx);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Transaction updated successfully'),
+                              content: Text('Transaksi berhasil diperbarui'),
                             ),
                           );
                         } else {
@@ -290,7 +296,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
-                                'New transaction added successfully',
+                                'Transaksi baru berhasil ditambahkan',
                               ),
                             ),
                           );
@@ -307,7 +313,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                         elevation: 0,
                       ),
                       child: Text(
-                        isEdit ? 'SAVE CHANGES' : 'ADD TRANSACTION',
+                        isEdit ? 'SIMPAN PERUBAHAN' : 'TAMBAH TRANSAKSI',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -386,7 +392,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text(
-          'Manage Transactions',
+          'Kelola Transaksi',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFF005BAC),
@@ -409,7 +415,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No transactions yet.',
+                    'Belum ada transaksi.',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey.shade600,
@@ -418,7 +424,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Add manually or upload a PDF statement.',
+                    'Tambah manual atau unggah dokumen PDF mutasi.',
                     style: TextStyle(color: Colors.grey.shade500),
                   ),
                 ],
@@ -559,13 +565,13 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                             provider.deleteTransaction(actualIndex);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: const Text('Transaction deleted'),
+                                content: const Text('Transaksi dihapus'),
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 action: SnackBarAction(
-                                  label: 'UNDO',
+                                  label: 'BATALKAN',
                                   textColor: Colors.white,
                                   onPressed: () {
                                     provider.addTransaction(tx);
@@ -627,7 +633,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
                                           Text(
                                             tx.keteranganKiri.isNotEmpty
                                                 ? tx.keteranganKiri
-                                                : 'No Title',
+                                                : 'Tanpa Judul',
                                             style: const TextStyle(
                                               fontWeight: FontWeight.w700,
                                               fontSize: 15,
@@ -723,7 +729,7 @@ class _ManageTransactionsPageState extends State<ManageTransactionsPage> {
         elevation: 4,
         icon: const Icon(Icons.add_rounded, size: 24),
         label: const Text(
-          'Add Transaction',
+          'Tambah Transaksi',
           style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
       ),

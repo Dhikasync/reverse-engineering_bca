@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/transaction.dart';
@@ -21,6 +22,9 @@ class TransactionProvider with ChangeNotifier {
   String _balance = '154830048';
 
   Map<String, double> _monthlyStartingBalances = {};
+  Map<String, String> _pdfPaths = {};
+
+  Map<String, String> get pdfPaths => _pdfPaths;
 
   // Always returns transactions sorted newest-first, regardless of internal order
   List<TransactionModel> get transactions {
@@ -284,7 +288,25 @@ class TransactionProvider with ChangeNotifier {
     }
   }
 
+  void setPdfPath(String period, String path) {
+    _pdfPaths[period] = path;
+    notifyListeners();
+    saveData();
+  }
+
   void clearTransactions() {
+    // Delete files
+    for (var path in _pdfPaths.values) {
+      try {
+        final file = File(path);
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
+      } catch (e) {
+        debugPrint("Error deleting PDF file: $e");
+      }
+    }
+    _pdfPaths.clear();
     _transactions.clear();
     _activeMonth = '';
     _activeYear = '';
@@ -292,6 +314,38 @@ class TransactionProvider with ChangeNotifier {
     PdfParserService.detectedYear = '';
     _monthlyStartingBalances.clear();
     // Do NOT reset branch/address — user set those manually
+    notifyListeners();
+    saveData();
+  }
+
+  void deleteTransactionsForPeriod(String period) {
+    // Delete physical file
+    final path = _pdfPaths[period];
+    if (path != null) {
+      try {
+        final file = File(path);
+        if (file.existsSync()) {
+          file.deleteSync();
+        }
+      } catch (e) {
+        debugPrint("Error deleting PDF file: $e");
+      }
+      _pdfPaths.remove(period);
+    }
+
+    // Remove transactions for this period
+    _transactions.removeWhere((tx) => getTransactionMonthYear(tx) == period);
+
+    // Remove starting balance for this period
+    _monthlyStartingBalances.remove(period);
+
+    if (_transactions.isEmpty) {
+      _activeMonth = '';
+      _activeYear = '';
+      PdfParserService.detectedMonth = '';
+      PdfParserService.detectedYear = '';
+    }
+
     notifyListeners();
     saveData();
   }
@@ -311,6 +365,9 @@ class TransactionProvider with ChangeNotifier {
     
     // Save monthly starting balances map (serialize as JSON)
     prefs.setString('monthlyStartingBalances', jsonEncode(_monthlyStartingBalances));
+
+    // Save pdf paths
+    prefs.setString('pdfPaths', jsonEncode(_pdfPaths));
 
     // Save transactions (serialize list to JSON string)
     final String transactionsJson = jsonEncode(_transactions.map((tx) => tx.toJson()).toList());
@@ -337,6 +394,17 @@ class TransactionProvider with ChangeNotifier {
         _monthlyStartingBalances = decoded.map((key, value) => MapEntry(key, (value as num).toDouble()));
       } catch (e) {
         debugPrint("Error parsing monthly balances: $e");
+      }
+    }
+
+    // Load pdf paths
+    final String? pdfPathsJson = prefs.getString('pdfPaths');
+    if (pdfPathsJson != null) {
+      try {
+        final decoded = jsonDecode(pdfPathsJson) as Map<String, dynamic>;
+        _pdfPaths = decoded.map((key, value) => MapEntry(key, value.toString()));
+      } catch (e) {
+        debugPrint("Error parsing pdf paths: $e");
       }
     }
 

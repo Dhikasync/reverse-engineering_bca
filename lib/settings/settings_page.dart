@@ -1,9 +1,10 @@
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
 import '../services/pdf_parser_service.dart';
-import 'manage_transactions_page.dart';
 import '../models/transaction.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -26,14 +27,6 @@ class _SettingsPageState extends State<SettingsPage> {
   late TextEditingController _nameController;
   late TextEditingController _accountNumberController;
   late TextEditingController _balanceController;
-  late TextEditingController _accountTypeController;
-  late TextEditingController _branchController;
-  // 5 address line fields
-  late TextEditingController _addr1Controller;
-  late TextEditingController _addr2Controller;
-  late TextEditingController _addr3Controller;
-  late TextEditingController _addr4Controller;
-  late TextEditingController _addr5Controller;
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isLoading = false;
@@ -52,29 +45,11 @@ class _SettingsPageState extends State<SettingsPage> {
     );
     _balanceController = TextEditingController(text: widget.initialBalance);
 
-    // Init from provider
-    final provider = Provider.of<TransactionProvider>(context, listen: false);
-    _accountTypeController = TextEditingController(text: provider.accountType);
-    _branchController = TextEditingController(text: provider.branch);
-    final providerAddress = provider.address;
-    _addr1Controller = TextEditingController(text: providerAddress.isNotEmpty ? providerAddress[0] : '');
-    _addr2Controller = TextEditingController(text: providerAddress.length > 1 ? providerAddress[1] : '');
-    _addr3Controller = TextEditingController(text: providerAddress.length > 2 ? providerAddress[2] : '');
-    _addr4Controller = TextEditingController(text: providerAddress.length > 3 ? providerAddress[3] : '');
-    _addr5Controller = TextEditingController(text: providerAddress.length > 4 ? providerAddress[4] : '');
-
     // Listen to any change
     for (final c in [
       _nameController,
       _accountNumberController,
       _balanceController,
-      _accountTypeController,
-      _branchController,
-      _addr1Controller,
-      _addr2Controller,
-      _addr3Controller,
-      _addr4Controller,
-      _addr5Controller,
     ]) {
       c.addListener(_onFieldChanged);
     }
@@ -90,13 +65,6 @@ class _SettingsPageState extends State<SettingsPage> {
       _nameController,
       _accountNumberController,
       _balanceController,
-      _accountTypeController,
-      _branchController,
-      _addr1Controller,
-      _addr2Controller,
-      _addr3Controller,
-      _addr4Controller,
-      _addr5Controller,
       _passwordController,
     ]) {
       c.removeListener(_onFieldChanged);
@@ -107,20 +75,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _saveAll() {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
-    // Save branch, address, account type
-    final branch = _branchController.text.trim();
-    final accountType = _accountTypeController.text.trim();
-    final addr = provider.address;
-    final a1 = _addr1Controller.text.trim().isNotEmpty ? _addr1Controller.text.trim() : (addr.isNotEmpty ? addr[0] : '');
-    final a2 = _addr2Controller.text.trim().isNotEmpty ? _addr2Controller.text.trim() : (addr.length > 1 ? addr[1] : '');
-    final a3 = _addr3Controller.text.trim().isNotEmpty ? _addr3Controller.text.trim() : (addr.length > 2 ? addr[2] : '');
-    final a4 = _addr4Controller.text.trim().isNotEmpty ? _addr4Controller.text.trim() : (addr.length > 3 ? addr[3] : '');
-    final a5 = _addr5Controller.text.trim().isNotEmpty ? _addr5Controller.text.trim() : (addr.length > 4 ? addr[4] : '');
-    
-    final addressLines = [a1, a2, a3, a4, a5].where((l) => l.isNotEmpty).toList();
-    provider.setBranchAndAddress(branch, addressLines);
-    PdfParserService.detectedAccountType = accountType.toUpperCase();
-    provider.setAccountType(accountType.toUpperCase());
     
     // Save User Profile (Name, Account, Balance)
     provider.setUserProfile(
@@ -234,6 +188,8 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _processSelectedFiles() async {
     if (_selectedFiles.isEmpty) return;
 
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
+
     setState(() {
       _isLoading = true;
     });
@@ -303,13 +259,33 @@ class _SettingsPageState extends State<SettingsPage> {
                 oldestDate = fileDate;
                 oldestStartingBalance = PdfParserService.detectedStartingBalance;
               }
+
+              // Copy original statement PDF to Application Documents directory
+              final firstTx = transactions.first;
+              final parts = firstTx.dateOrStatus.split('\n');
+              if (parts.length >= 3) {
+                String monthShort = parts[1];
+                String year = parts[2];
+                String indoMonth = provider.mapMonthToIndonesian(monthShort);
+                String periodKey = "$indoMonth $year";
+
+                final appDir = await getApplicationDocumentsDirectory();
+                final savedDir = Directory('${appDir.path}/uploaded_pdfs');
+                if (!await savedDir.exists()) {
+                  await savedDir.create(recursive: true);
+                }
+                final savedPdfPath = '${savedDir.path}/${_accountNumberController.text.trim()}_$periodKey.pdf';
+                await File(filePath).copy(savedPdfPath);
+                
+                provider.setPdfPath(periodKey, savedPdfPath);
+              }
             }
           } catch (fileError) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Failed to process $fileName: Incorrect format or password',
+                    'Gagal memproses $fileName: Format salah atau password salah',
                   ),
                 ),
               );
@@ -322,19 +298,16 @@ class _SettingsPageState extends State<SettingsPage> {
         if (allTransactions.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('No transactions found in the processed files.'),
+              content: Text('Tidak ada transaksi yang ditemukan dalam file yang diproses.'),
             ),
           );
         } else {
-          Provider.of<TransactionProvider>(
-            context,
-            listen: false,
-          ).processNewPdfTransactions(allTransactions, "", "", newMonthlyBalances);
+          provider.processNewPdfTransactions(allTransactions, "", "", newMonthlyBalances);
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Successfully read ${allTransactions.length} transactions from $successCount document files!',
+                'Berhasil membaca ${allTransactions.length} transaksi dari $successCount file dokumen!',
               ),
             ),
           );
@@ -356,25 +329,6 @@ class _SettingsPageState extends State<SettingsPage> {
               _balanceController.text = PdfParserService.detectedStartingBalance
                   .toStringAsFixed(0);
             }
-
-            // Auto-fill account type if detected
-            if (PdfParserService.detectedAccountType.isNotEmpty) {
-              _accountTypeController.text =
-                  PdfParserService.detectedAccountType;
-            }
-            // Auto-fill branch if detected
-            if (PdfParserService.detectedBranch.isNotEmpty) {
-              _branchController.text = PdfParserService.detectedBranch;
-            }
-            // Auto-fill address if detected
-            final addr = PdfParserService.detectedAddress;
-            if (addr.isNotEmpty) {
-              _addr1Controller.text = addr.isNotEmpty ? addr[0] : '';
-              _addr2Controller.text = addr.length > 1 ? addr[1] : '';
-              _addr3Controller.text = addr.length > 2 ? addr[2] : '';
-              _addr4Controller.text = addr.length > 3 ? addr[3] : '';
-              _addr5Controller.text = addr.length > 4 ? addr[4] : '';
-            }
           });
         }
       }
@@ -382,7 +336,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('System error occurred: $e')));
+        ).showSnackBar(SnackBar(content: Text('Terjadi kesalahan sistem: $e')));
       }
     } finally {
       if (mounted) {
@@ -416,17 +370,17 @@ class _SettingsPageState extends State<SettingsPage> {
             controller: _passwordController,
             obscureText: true,
             decoration: const InputDecoration(
-              hintText: 'Enter password (DDMMYY)',
+              hintText: 'Masukkan password (DDMMYY)',
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, null),
-              child: const Text('Skip File'),
+              child: const Text('Lewati File'),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, _passwordController.text),
-              child: const Text('Submit'),
+              child: const Text('Kirim'),
             ),
           ],
         );
@@ -449,7 +403,7 @@ class _SettingsPageState extends State<SettingsPage> {
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           title: const Text(
-            'Settings',
+            'Pengaturan',
             style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
           ),
           backgroundColor: Colors.transparent,
@@ -505,7 +459,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Account Number: ${_accountNumberController.text}',
+                      'Nomor Rekening: ${_accountNumberController.text}',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 13,
@@ -525,7 +479,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     // 2. Profile Settings Card
                     _buildSectionHeader(
-                      'Profile Information',
+                      'Informasi Profil',
                       Icons.badge_outlined,
                     ),
                     const SizedBox(height: 8),
@@ -542,20 +496,20 @@ class _SettingsPageState extends State<SettingsPage> {
                           children: [
                             _buildTextField(
                               controller: _nameController,
-                              label: 'Name',
+                              label: 'Nama',
                               icon: Icons.person_outline,
                             ),
                             const SizedBox(height: 16),
                             _buildTextField(
                               controller: _accountNumberController,
-                              label: 'Account Number',
+                              label: 'Nomor Rekening',
                               icon: Icons.credit_card_outlined,
                               keyboardType: TextInputType.number,
                             ),
                             const SizedBox(height: 16),
                             _buildTextField(
                               controller: _balanceController,
-                              label: 'Balance',
+                              label: 'Saldo',
                               icon: Icons.account_balance_wallet_outlined,
                               keyboardType: TextInputType.number,
                             ),
@@ -567,108 +521,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
                     const SizedBox(height: 28),
 
-                    // 2b. Branch & Address Card
-                    _buildSectionHeader(
-                      'Jenis Rekening, Cabang & Alamat',
-                      Icons.location_city_outlined,
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      elevation: 2,
-                      shadowColor: Colors.black.withValues(alpha: 0.05),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
-                      ),
-                      color: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Data ini akan tampil di header PDF e-Statement yang diekspor.',
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _accountTypeController,
-                              label:
-                                  'Jenis Rekening (Contoh: REKENING TAHAPAN)',
-                              icon: Icons.credit_card_outlined,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildTextField(
-                              controller: _branchController,
-                              label: 'KCP / KCU (Contoh: KCU GRESIK)',
-                              icon: Icons.account_balance_outlined,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Alamat',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF003366),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Consumer<TransactionProvider>(
-                              builder: (context, provider, child) {
-                                final addr = provider.address;
-                                return Column(
-                                  children: [
-                                    _buildTextField(
-                                      controller: _addr1Controller,
-                                      label: 'Address Line 1',
-                                      icon: Icons.location_on_outlined,
-                                      hintText: addr.isNotEmpty ? addr[0] : '',
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildTextField(
-                                      controller: _addr2Controller,
-                                      label: 'Address Line 2',
-                                      icon: Icons.location_on_outlined,
-                                      hintText: addr.length > 1 ? addr[1] : '',
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildTextField(
-                                      controller: _addr3Controller,
-                                      label: 'Address Line 3',
-                                      icon: Icons.location_on_outlined,
-                                      hintText: addr.length > 2 ? addr[2] : '',
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildTextField(
-                                      controller: _addr4Controller,
-                                      label: 'Address Line 4',
-                                      icon: Icons.location_on_outlined,
-                                      hintText: addr.length > 3 ? addr[3] : '',
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildTextField(
-                                      controller: _addr5Controller,
-                                      label: 'Address Line 5',
-                                      icon: Icons.location_on_outlined,
-                                      hintText: addr.length > 4 ? addr[4] : '',
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
-
                     // 3. Document Management Card
                     _buildSectionHeader(
-                      'Upload & Manage Statement',
+                      'Unggah & Kelola Mutasi',
                       Icons.cloud_upload_outlined,
                     ),
                     const SizedBox(height: 8),
@@ -685,7 +540,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Upload Statement PDF',
+                              'Unggah PDF Mutasi',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -694,7 +549,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Select one or more statement PDF files to upload.',
+                              'Pilih satu atau lebih file PDF mutasi untuk diunggah.',
                               style: TextStyle(
                                 color: Colors.grey.shade500,
                                 fontSize: 12,
@@ -713,7 +568,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   color: bcaBlue,
                                 ),
                                 label: Text(
-                                  'Select PDF File',
+                                  'Pilih File PDF',
                                   style: TextStyle(
                                     color: bcaBlue,
                                     fontWeight: FontWeight.w600,
@@ -734,7 +589,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             if (_selectedFiles.isNotEmpty) ...[
                               const SizedBox(height: 20),
                               Text(
-                                'Files ready to process (${_selectedFiles.length}):',
+                                'File siap diproses (${_selectedFiles.length}):',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 13,
@@ -791,7 +646,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                         onPressed: _isLoading
                                             ? null
                                             : () => _removeSelectedFile(index),
-                                        tooltip: 'Cancel processing this file',
+                                        tooltip: 'Batal memproses file ini',
                                       ),
                                     );
                                   },
@@ -819,8 +674,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                       : const Icon(Icons.upload_file),
                                   label: Text(
                                     _isLoading
-                                        ? 'Processing Documents...'
-                                        : 'Process ${_selectedFiles.length} Document Files',
+                                        ? 'Memproses Dokumen...'
+                                        : 'Proses ${_selectedFiles.length} File Dokumen',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -840,55 +695,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
 
-                    // 4. Manage Transactions Shortcut Card
-                    Card(
-                      elevation: 2,
-                      shadowColor: Colors.black.withValues(alpha: 0.05),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
-                      ),
-                      color: Colors.white,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        leading: CircleAvatar(
-                          backgroundColor: const Color(0xFFE5F6FA),
-                          child: Icon(Icons.edit_note, color: bcaBlue),
-                        ),
-                        title: const Text(
-                          'Manage Manual Transactions',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF003366),
-                          ),
-                        ),
-                        subtitle: const Text(
-                          'Edit, delete, or add transactions manually',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        trailing: Icon(
-                          Icons.arrow_forward_ios,
-                          size: 16,
-                          color: bcaBlue,
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const ManageTransactionsPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // 5. Clear PDF Data Card
+                    // 4. Clear PDF Data Card
                     Card(
                       elevation: 2,
                       shadowColor: Colors.black.withValues(alpha: 0.05),
@@ -906,7 +713,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           child: const Icon(Icons.delete_sweep, color: Colors.red),
                         ),
                         title: const Text(
-                          'Clear PDF Data',
+                          'Hapus Data PDF',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -914,7 +721,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                         ),
                         subtitle: const Text(
-                          'Remove all uploaded PDF transactions and start fresh',
+                          'Hapus semua transaksi PDF yang diunggah dan mulai dari awal',
                           style: TextStyle(fontSize: 12),
                         ),
                         trailing: const Icon(
@@ -923,40 +730,148 @@ class _SettingsPageState extends State<SettingsPage> {
                           color: Colors.red,
                         ),
                         onTap: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Clear All Data?'),
-                              content: const Text(
-                                'This will delete all transactions currently loaded in the app. This action cannot be undone. Are you sure?',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: const Text('Cancel'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  child: const Text('Clear Data'),
-                                ),
-                              ],
-                            ),
-                          );
+                          final provider = Provider.of<TransactionProvider>(context, listen: false);
+                          final periods = provider.pdfPaths.keys.toList();
 
-                          if (confirm == true) {
-                            if (!context.mounted) return;
-                            Provider.of<TransactionProvider>(context, listen: false).clearTransactions();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('All PDF transaction data has been cleared.'),
-                                backgroundColor: Colors.red,
+                          if (periods.isEmpty) {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Hapus Data PDF'),
+                                content: const Text('Tidak ada data PDF mutasi yang diunggah.'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
                               ),
                             );
+                            return;
                           }
+
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return StatefulBuilder(
+                                builder: (context, setStateDialog) {
+                                  final currentPeriods = provider.pdfPaths.keys.toList();
+                                  currentPeriods.sort((a, b) => b.compareTo(a)); // Sort descending by default
+                                  return AlertDialog(
+                                    title: const Text('Pilih PDF untuk Dihapus'),
+                                    content: currentPeriods.isEmpty
+                                        ? const Text('Semua data PDF telah dihapus.')
+                                        : Container(
+                                            width: double.maxFinite,
+                                            constraints: const BoxConstraints(maxHeight: 250),
+                                            child: ListView.builder(
+                                              shrinkWrap: true,
+                                              itemCount: currentPeriods.length,
+                                              itemBuilder: (context, index) {
+                                                final period = currentPeriods[index];
+                                                return ListTile(
+                                                  contentPadding: EdgeInsets.zero,
+                                                  title: Text(period.toUpperCase()),
+                                                  trailing: IconButton(
+                                                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                                    onPressed: () async {
+                                                      final confirmDelete = await showDialog<bool>(
+                                                        context: context,
+                                                        builder: (context) => AlertDialog(
+                                                          title: const Text('Hapus Periode?'),
+                                                          content: Text('Hapus data transaksi untuk periode $period? Tindakan ini tidak dapat dibatalkan.'),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(context, false),
+                                                              child: const Text('Batal'),
+                                                            ),
+                                                            ElevatedButton(
+                                                              onPressed: () => Navigator.pop(context, true),
+                                                              style: ElevatedButton.styleFrom(
+                                                                backgroundColor: Colors.red,
+                                                                foregroundColor: Colors.white,
+                                                              ),
+                                                              child: const Text('Hapus'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+
+                                                      if (confirmDelete == true) {
+                                                        provider.deleteTransactionsForPeriod(period);
+                                                        setStateDialog(() {});
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text('Data transaksi periode $period telah dihapus.'),
+                                                              backgroundColor: Colors.red,
+                                                            ),
+                                                          );
+                                                        }
+                                                      }
+                                                    },
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('Tutup'),
+                                      ),
+                                      if (currentPeriods.isNotEmpty)
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            final confirmAll = await showDialog<bool>(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: const Text('Hapus Semua Data?'),
+                                                content: const Text(
+                                                  'Ini akan menghapus semua data transaksi yang saat ini dimuat di aplikasi. Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin?',
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, false),
+                                                    child: const Text('Batal'),
+                                                  ),
+                                                  ElevatedButton(
+                                                    onPressed: () => Navigator.pop(context, true),
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: Colors.red,
+                                                      foregroundColor: Colors.white,
+                                                    ),
+                                                    child: const Text('Hapus Semua'),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+
+                                            if (confirmAll == true) {
+                                              provider.clearTransactions();
+                                              if (context.mounted) {
+                                                Navigator.pop(context); // Close selection dialog
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text('Semua data transaksi PDF telah dihapus.'),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          child: const Text('Hapus Semua'),
+                                        ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          );
                         },
                       ),
                     ),
@@ -976,7 +891,7 @@ class _SettingsPageState extends State<SettingsPage> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Status: ${provider.transactions.length} transactions active in system.',
+                              'Status: ${provider.transactions.length} transaksi aktif di sistem.',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 color: Colors.green.shade600,
