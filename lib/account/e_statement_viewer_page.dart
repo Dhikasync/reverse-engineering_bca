@@ -47,13 +47,20 @@ class _EStatementViewerPageState extends State<EStatementViewerPage> {
   /// Logika untuk membagikan file PDF
   Future<void> _sharePdf() async {
     try {
-      final xFile = XFile(widget.pdfPath);
       final box = context.findRenderObject() as RenderBox?;
+      final tempDir = await getTemporaryDirectory();
+      final shareFilePath = '${tempDir.path}/$_generatedFileName';
+      await File(widget.pdfPath).copy(shareFilePath);
+
+      final xFile = XFile(shareFilePath);
       await SharePlus.instance.share(
         ShareParams(
           files: [xFile],
-          text: 'Laporan Mutasi Rekening - $_generatedFileName',
-          sharePositionOrigin: box != null ? (box.localToGlobal(Offset.zero) & box.size) : null,
+          text:
+              'Laporan Mutasi Rekening - ${_generatedFileName.replaceAll('.pdf', '')}',
+          sharePositionOrigin: box != null
+              ? (box.localToGlobal(Offset.zero) & box.size)
+              : null,
         ),
       );
     } catch (e) {
