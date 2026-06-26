@@ -38,7 +38,10 @@ class _EStatementViewerPageState extends State<EStatementViewerPage> {
 
   String _generateFileName(String accNumber, DateTime date) {
     String monthName = DateFormat('MMMM', 'id_ID').format(date);
-    return '${accNumber}_${monthName}_${date.year}.pdf';
+    String shortMonth = monthName.length >= 3
+        ? monthName.substring(0, 3).toUpperCase()
+        : monthName.toUpperCase();
+    return '${accNumber}_${shortMonth}_${date.year}.pdf';
   }
 
   /// Logika untuk membagikan file PDF
@@ -126,7 +129,7 @@ class _EStatementViewerPageState extends State<EStatementViewerPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          _generatedFileName,
+          _generatedFileName.replaceAll('.pdf', ''),
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16.0,

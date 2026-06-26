@@ -31,7 +31,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late ScrollController _scrollController;
-  late ScrollController _transactionScrollController;
   double _scrollOffset = 0.0;
   bool _isLoading = true;
 
@@ -49,8 +48,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
       }
     });
 
-    _transactionScrollController = ScrollController();
-
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
@@ -64,7 +61,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
   void dispose() {
     _tabController.dispose();
     _scrollController.dispose();
-    _transactionScrollController.dispose();
     super.dispose();
   }
 
@@ -184,18 +180,9 @@ class _AccountInformationPageState extends State<AccountInformationPage>
                               fontSize: 14,
                             ),
                             tabs: const [
-                              Tab(
-                                height: 60.0,
-                                child: Text('Mutasi'),
-                              ),
-                              Tab(
-                                height: 60.0,
-                                text: 'Kartu',
-                              ),
-                              Tab(
-                                height: 60.0,
-                                text: 'Poket',
-                              ),
+                              Tab(height: 60.0, child: Text('Mutasi')),
+                              Tab(height: 60.0, text: 'Kartu'),
+                              Tab(height: 60.0, text: 'Poket'),
                             ],
                           ),
                         ),
@@ -393,7 +380,6 @@ class _AccountInformationPageState extends State<AccountInformationPage>
     }
 
     return ListView.builder(
-      controller: _transactionScrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       itemCount: transactions.length,
@@ -1003,7 +989,7 @@ class TransactionTile extends StatelessWidget {
           Text(
             parts[1].isNotEmpty
                 ? parts[1][0].toUpperCase() +
-                    parts[1].substring(1).toLowerCase()
+                      parts[1].substring(1).toLowerCase()
                 : '',
             style: GoogleFonts.openSans(
               color: const Color.fromARGB(255, 182, 182, 182),
