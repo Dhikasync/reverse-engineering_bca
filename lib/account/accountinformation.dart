@@ -906,6 +906,63 @@ class TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String displayKiri = keteranganKiri;
+    String displayKanan = keteranganKanan;
+
+    if (keteranganKiri.toUpperCase().contains('BYR VIA E-BANKING')) {
+      final upperKiri = keteranganKiri.toUpperCase();
+      final prefixIndex = upperKiri.indexOf('BYR VIA E-BANKING');
+      final prefixLength = 'BYR VIA E-BANKING'.length;
+      final afterPrefix = keteranganKiri.substring(prefixIndex + prefixLength).trim();
+      if (afterPrefix.isNotEmpty) {
+        displayKiri = 'BYR VIA E-BANKING';
+        if (displayKanan.isNotEmpty) {
+          displayKanan = '$afterPrefix $displayKanan';
+        } else {
+          displayKanan = afterPrefix;
+        }
+      }
+    }
+
+    if (keteranganKiri.toUpperCase().contains('TARIKAN ATM')) {
+      displayKiri = 'TARIKAN ATM';
+      final dateRegex = RegExp(r'(?:TGL\s*:\s*)?(\d{2}/\d{2})', caseSensitive: false);
+      final match = dateRegex.firstMatch(displayKanan);
+      if (match != null) {
+        final dateStr = match.group(1);
+        displayKiri = 'TARIKAN ATM $dateStr';
+      }
+      displayKanan = '';
+    }
+
+    if (keteranganKiri.toUpperCase().startsWith('SWITCHING DB') ||
+        keteranganKiri.toUpperCase().startsWith('SWITCHING CR')) {
+      final upperKiri = keteranganKiri.toUpperCase();
+      final isDb = upperKiri.startsWith('SWITCHING DB');
+      final prefix = isDb ? 'SWITCHING DB' : 'SWITCHING CR';
+      final remainder = keteranganKiri.substring(prefix.length).trim();
+      if (remainder.isNotEmpty) {
+        displayKiri = prefix;
+        if (displayKanan.isNotEmpty) {
+          displayKanan = '$remainder $displayKanan';
+        } else {
+          displayKanan = remainder;
+        }
+      }
+    }
+
+    if (displayKiri.toUpperCase() == 'SWITCHING') {
+      final upperKanan = displayKanan.toUpperCase().trim();
+      if (upperKanan.startsWith('CR') || upperKanan.startsWith('DB')) {
+        final match = RegExp(r'^(CR|DB)\b', caseSensitive: false).firstMatch(displayKanan);
+        if (match != null) {
+          final code = match.group(1)!.toUpperCase();
+          displayKiri = 'SWITCHING $code';
+          displayKanan = displayKanan.substring(match.end).trim();
+        }
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       decoration: BoxDecoration(
@@ -922,40 +979,48 @@ class TransactionTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (displayKanan.isNotEmpty) ...[
+                  Text(
+                    displayKanan
+                        .replaceAll('\n', ' ')
+                        .replaceAll(RegExp(r'\s+'), ' ')
+                        .trim(),
+                    style: GoogleFonts.openSans(
+                      color: const Color(0xFF003366),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                ],
                 Text(
-                  keteranganKiri,
+                  displayKiri,
                   style: GoogleFonts.openSans(
                     color: const Color(0xFF003366),
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
                 ),
-                if (keteranganKanan.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                if (subtitle.isNotEmpty &&
+                    subtitle.toUpperCase() != 'TRANSAKSI DEBIT' &&
+                    subtitle.toUpperCase() != 'TRANSAKSI KREDIT') ...[
+                  const SizedBox(height: 2),
                   Text(
-                    keteranganKanan,
+                    subtitle,
                     style: GoogleFonts.openSans(
                       color: const Color(0xFF003366),
+                      fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
                   ),
                 ],
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.openSans(
-                    color: const Color(0xFF003366),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 2),
                 Text(
                   amount,
                   style: GoogleFonts.openSans(
                     color: isDebit
                         ? const Color(0xFFD32F2F)
-                        : const Color(0xFF008A00),
+                        : const Color.fromARGB(255, 8, 180, 192),
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),

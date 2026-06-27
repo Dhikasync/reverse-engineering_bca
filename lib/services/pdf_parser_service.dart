@@ -381,12 +381,13 @@ class PdfParserService {
               final prefixRegex = RegExp(
                 r'^(?:'
                 r'TRSF E-BANKING\s+(?:CR|DB)|'
+                r'BYR VIA E-BANKING|'
                 r'BI-FAST\s+(?:CR|DB)|'
                 r'SETORAN\s+VIA\s+CDM|'
                 r'SETORAN\s+TUNAI|'
                 r'TARIKAN\s+ATM|'
                 r'TARIKAN\s+TUNAI|'
-                r'SWITCHING\s+(?:DB|CR)\s+TRANSFER[^\d/]*\d*|'
+                r'SWITCHING\s+(?:DB|CR)|'
                 r'SWITCHING|'
                 r'BIAYA\s+ADM|'
                 r'PAJAK\s+BUNGA|'
@@ -480,7 +481,7 @@ class PdfParserService {
 
           bool isKnownPrefix = RegExp(
             r'^(\d{2}/\d{2})\s+('
-            r'TRSF E-BANKING|BI-FAST|SETORAN|TARIKAN|SWITCHING|BIAYA|PAJAK|BUNGA|PEND KARTU|SALDO|KOR\.|KOREKSI|KR OTOMATIS|PEMBELIAN|PEMBAYARAN|TRANSAKSI'
+            r'TRSF E-BANKING|BI-FAST|SETORAN|TARIKAN|SWITCHING|BIAYA|PAJAK|BUNGA|PEND KARTU|SALDO|KOR\.|KOREKSI|KR OTOMATIS|PEMBELIAN|PEMBAYARAN|TRANSAKSI|BYR VIA E-BANKING'
             r')',
             caseSensitive: false,
           ).hasMatch(line);
