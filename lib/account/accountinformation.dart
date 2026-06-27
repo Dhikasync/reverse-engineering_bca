@@ -987,7 +987,7 @@ class TransactionTile extends StatelessWidget {
                         .trim(),
                     style: GoogleFonts.openSans(
                       color: const Color(0xFF003366),
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                       fontSize: 13,
                     ),
                   ),
@@ -997,7 +997,7 @@ class TransactionTile extends StatelessWidget {
                   displayKiri,
                   style: GoogleFonts.openSans(
                     color: const Color(0xFF003366),
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
                     fontSize: 13,
                   ),
                 ),
@@ -1015,14 +1015,14 @@ class TransactionTile extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 2),
-                Text(
+                 Text(
                   amount,
                   style: GoogleFonts.openSans(
                     color: isDebit
-                        ? const Color(0xFFD32F2F)
-                        : const Color.fromARGB(255, 8, 180, 192),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                        ? const Color(0xFFBA2329)
+                        : const Color(0xFF008BBF),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
                   ),
                 ),
               ],
