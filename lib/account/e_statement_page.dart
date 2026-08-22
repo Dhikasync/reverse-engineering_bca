@@ -6,6 +6,7 @@ import 'dart:math' as math; // Tambahan untuk kalkulasi putaran animasi
 // Import viewer page yang baru dibuat (sesuaikan path-nya jika berbeda)
 import 'package:reverse_engineering_bca/account/e_statement_viewer_page.dart';
 import '../providers/transaction_provider.dart';
+import 'package:reverse_engineering_bca/periode/pilih_periode_page.dart';
 
 class EStatementPage extends StatefulWidget {
   final String userName;
@@ -104,7 +105,9 @@ class _EStatementPageState extends State<EStatementPage> {
         Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('File PDF asli tidak ditemukan. Silakan unggah ulang di Pengaturan.'),
+            content: Text(
+              'File PDF asli tidak ditemukan. Silakan unggah ulang di Pengaturan.',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -307,9 +310,12 @@ class _EStatementPageState extends State<EStatementPage> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           padding: EdgeInsets.zero,
-                          itemCount: months.length + 1,
+                          itemCount:
+                              (months.length > 3 ? 3 : months.length) + 1,
                           itemBuilder: (context, index) {
-                            if (index < months.length) {
+                            final limit = months.length > 3 ? 3 : months.length;
+
+                            if (index < limit) {
                               final monthStr = months[index];
                               final displayMonth = _formatMonthDisplay(
                                 monthStr,
@@ -385,7 +391,15 @@ class _EStatementPageState extends State<EStatementPage> {
                                       color: Color(0xFF003366),
                                       size: 24,
                                     ),
-                                    onTap: () {},
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const PilihPeriodePage(),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
                               );
