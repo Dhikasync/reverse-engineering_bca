@@ -109,10 +109,10 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-flutter_launcher_icons:
-  android: true
-  ios: true
-  image_path: "assets/images/Logo_myBCA.png"
+# flutter_launcher_icons:
+#   android: true
+#   ios: true
+#   image_path: "assets/images/bca-icon.png"
 
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/Logo_myBCA.png"
+#   # adaptive_icon_background: "#0066AE"
+#   adaptive_icon_foreground: "assets/images/playstore.png"

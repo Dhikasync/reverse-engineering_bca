@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PilihTahunPage extends StatefulWidget {
   const PilihTahunPage({Key? key}) : super(key: key);
@@ -16,10 +17,10 @@ class _PilihTahunPageState extends State<PilihTahunPage> {
   @override
   void initState() {
     super.initState();
-    // Mengambil tahun saat ini secara real-time dari sistem HP
+    // Mengambil tahun saat ini secara real-time
     int currentYear = DateTime.now().year;
 
-    // Menghasilkan daftar tahun dari tahun saat ini mundur hingga 2010
+    // Menghasilkan daftar tahun dari tahun saat ini mundur
     for (int i = currentYear; i >= 2010; i--) {
       years.add(i.toString());
     }
@@ -35,94 +36,113 @@ class _PilihTahunPageState extends State<PilihTahunPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bcaBlue,
+      extendBodyBehindAppBar: true, // Agar body bisa masuk ke bawah AppBar
+      backgroundColor:
+          Colors.transparent, // Background tembus pandang untuk melihat image
       appBar: AppBar(
-        backgroundColor: bcaBlue,
+        backgroundColor: Colors.transparent, // AppBar transparan
         elevation: 0,
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
           child: const Icon(Icons.arrow_back_ios, color: Colors.white),
         ),
-        title: const Text(
+        title: Text(
           'Pilih Tahun',
-          style: TextStyle(
+          style: GoogleFonts.openSans(
             fontWeight: FontWeight.w600,
             color: Colors.white,
-            fontFamily: 'Sans',
+            fontSize: 18,
           ),
         ),
       ),
       body: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(top: 10),
+        // Menambahkan gambar background biru BCA
         decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+          image: DecorationImage(
+            image: AssetImage('assets/images/background.png'),
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
           ),
         ),
-        child: Column(
-          children: [
-            // Search Bar
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F0F5),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: TextField(
-                  controller: searchController,
-                  onChanged: _filterYears,
-                  decoration: InputDecoration(
-                    hintText: 'Cari',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontFamily: 'Sans',
-                    ),
-                    prefixIcon: Icon(Icons.search, color: Colors.grey.shade600),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
+        child: SafeArea(
+          bottom: false,
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(top: 10),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
             ),
-
-            // List Tahun
-            Expanded(
-              child: ListView.separated(
-                itemCount: filteredYears.length,
-                separatorBuilder: (context, index) => Divider(
-                  color: Colors.grey.shade200,
-                  height: 1,
-                  indent: 20,
-                  endIndent: 20,
-                ),
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 2,
+            child: Column(
+              children: [
+                // Search Bar
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F0F5),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    title: Text(
-                      filteredYears[index],
-                      style: TextStyle(
-                        color: bcaBlue,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        fontFamily: 'Sans',
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: _filterYears,
+                      decoration: InputDecoration(
+                        hintText: 'Cari',
+                        hintStyle: GoogleFonts.openSans(
+                          color: Colors.grey.shade500,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey.shade600,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 14,
+                        ),
                       ),
                     ),
-                    onTap: () {
-                      // Mengirimkan tahun yang dipilih kembali ke halaman sebelumnya
-                      Navigator.pop(context, filteredYears[index]);
+                  ),
+                ),
+
+                // List Tahun
+                Expanded(
+                  child: ListView.separated(
+                    padding: EdgeInsets
+                        .zero, // Menghilangkan padding atas bawaan ListView
+                    itemCount: filteredYears.length,
+                    separatorBuilder: (context, index) => Divider(
+                      color: Colors.grey.shade200,
+                      height: 1,
+                      indent: 20,
+                      endIndent: 20,
+                    ),
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 2,
+                        ),
+                        title: Text(
+                          filteredYears[index],
+                          style: GoogleFonts.openSans(
+                            color: bcaBlue,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.pop(context, filteredYears[index]);
+                        },
+                      );
                     },
-                  );
-                },
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
