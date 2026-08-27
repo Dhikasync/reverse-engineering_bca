@@ -135,15 +135,28 @@ class _EStatementViewerPageState extends State<EStatementViewerPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.white,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           _generatedFileName.replaceAll('.pdf', ''),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 16.0,
+            fontSize: 18.0,
             fontWeight: FontWeight.w600,
+            // height: 1.1,
+            // letterSpacing: 0.5,
           ),
         ),
-        centerTitle: true,
+        centerTitle: false,
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
@@ -173,7 +186,11 @@ class _EStatementViewerPageState extends State<EStatementViewerPage> {
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.only(top: 20.0),
+                  padding: const EdgeInsets.only(
+                    top: 9.0,
+                    left: 6.0,
+                    right: 6.0,
+                  ),
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.only(
@@ -189,7 +206,7 @@ class _EStatementViewerPageState extends State<EStatementViewerPage> {
                     removeLeft: true,
                     removeRight: true,
                     child: Transform.scale(
-                      scale: 1.03,
+                      scale: 1.0,
                       child: SfPdfViewer.file(
                         File(widget.pdfPath),
                         controller: _pdfViewerController,

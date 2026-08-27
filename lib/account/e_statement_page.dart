@@ -178,7 +178,8 @@ class _EStatementPageState extends State<EStatementPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
+        titleSpacing: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new,
@@ -383,21 +384,18 @@ class _EStatementPageState extends State<EStatementPage> {
                                       size: 24,
                                     ),
                                     onTap: () async {
-                                      // Menerima data periode yang dipilih dari PilihPeriodePage
-                                      final selectedPeriod =
-                                          await Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const PilihPeriodePage(),
-                                            ),
-                                          );
-
-                                      // Jika user memilih periode lalu menekan 'Tampilkan', eksekusi exportPdf
-                                      if (selectedPeriod != null &&
-                                          selectedPeriod is String) {
-                                        _exportPdf(selectedPeriod);
-                                      }
+                                      // Menggunakan callback agar saat back dari PDF viewer kembali ke PilihPeriodePage
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              PilihPeriodePage(
+                                                onTampilkan: (selectedPeriod) {
+                                                  _exportPdf(selectedPeriod);
+                                                },
+                                              ),
+                                        ),
+                                      );
                                     },
                                   ),
                                 ),

@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'pilih_tahun_page.dart';
 
 class PilihPeriodePage extends StatefulWidget {
-  const PilihPeriodePage({Key? key}) : super(key: key);
+  final Function(String)? onTampilkan;
+
+  const PilihPeriodePage({Key? key, this.onTampilkan}) : super(key: key);
 
   @override
   State<PilihPeriodePage> createState() => _PilihPeriodePageState();
@@ -239,7 +241,11 @@ class _PilihPeriodePageState extends State<PilihPeriodePage> {
                                   String selectedPeriod =
                                       "$formattedMonth $selectedYear";
 
-                                  Navigator.pop(context, selectedPeriod);
+                                  if (widget.onTampilkan != null) {
+                                    widget.onTampilkan!(selectedPeriod);
+                                  } else {
+                                    Navigator.pop(context, selectedPeriod);
+                                  }
                                 }
                               : null,
                           style: ElevatedButton.styleFrom(

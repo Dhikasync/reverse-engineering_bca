@@ -75,7 +75,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _saveAll() {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
-    
+
     // Save User Profile (Name, Account, Balance)
     provider.setUserProfile(
       _nameController.text.trim(),
@@ -196,7 +196,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     List<TransactionModel> allTransactions = [];
     int successCount = 0;
-    
+
     Map<String, double> newMonthlyBalances = {};
     double? oldestStartingBalance;
     DateTime? oldestDate;
@@ -209,18 +209,31 @@ class _SettingsPageState extends State<SettingsPage> {
         int year = int.parse(parts[2]);
         String monthStr = parts[1].toLowerCase();
         int month = 1;
-        if (monthStr.startsWith('jan')) { month = 1; }
-        else if (monthStr.startsWith('feb')) { month = 2; }
-        else if (monthStr.startsWith('mar')) { month = 3; }
-        else if (monthStr.startsWith('apr')) { month = 4; }
-        else if (monthStr.startsWith('may') || monthStr.startsWith('mei')) { month = 5; }
-        else if (monthStr.startsWith('jun')) { month = 6; }
-        else if (monthStr.startsWith('jul')) { month = 7; }
-        else if (monthStr.startsWith('aug') || monthStr.startsWith('agu')) { month = 8; }
-        else if (monthStr.startsWith('sep')) { month = 9; }
-        else if (monthStr.startsWith('oct') || monthStr.startsWith('okt')) { month = 10; }
-        else if (monthStr.startsWith('nov')) { month = 11; }
-        else if (monthStr.startsWith('dec') || monthStr.startsWith('des')) { month = 12; }
+        if (monthStr.startsWith('jan')) {
+          month = 1;
+        } else if (monthStr.startsWith('feb')) {
+          month = 2;
+        } else if (monthStr.startsWith('mar')) {
+          month = 3;
+        } else if (monthStr.startsWith('apr')) {
+          month = 4;
+        } else if (monthStr.startsWith('may') || monthStr.startsWith('mei')) {
+          month = 5;
+        } else if (monthStr.startsWith('jun')) {
+          month = 6;
+        } else if (monthStr.startsWith('jul')) {
+          month = 7;
+        } else if (monthStr.startsWith('aug') || monthStr.startsWith('agu')) {
+          month = 8;
+        } else if (monthStr.startsWith('sep')) {
+          month = 9;
+        } else if (monthStr.startsWith('oct') || monthStr.startsWith('okt')) {
+          month = 10;
+        } else if (monthStr.startsWith('nov')) {
+          month = 11;
+        } else if (monthStr.startsWith('dec') || monthStr.startsWith('des')) {
+          month = 12;
+        }
         return DateTime(year, month, day);
       } catch (e) {
         return DateTime.now();
@@ -234,30 +247,27 @@ class _SettingsPageState extends State<SettingsPage> {
           String fileName = file.name;
 
           try {
-            bool requiresPassword = await PdfParserService.isPasswordRequired(
-              filePath,
-            );
-            String? password;
-            if (requiresPassword) {
-              password = await _showPasswordDialog(fileName);
-            }
-
             final transactions = await PdfParserService.parseBcaStatement(
               filePath,
-              password: password,
+              password: null,
             );
 
             if (transactions.isNotEmpty) {
               allTransactions.addAll(transactions);
               successCount++;
-              
-              DateTime fileDate = parseDateSimple(transactions.first.dateOrStatus);
-              
-              newMonthlyBalances.addAll(PdfParserService.detectedMonthlyBalances);
+
+              DateTime fileDate = parseDateSimple(
+                transactions.first.dateOrStatus,
+              );
+
+              newMonthlyBalances.addAll(
+                PdfParserService.detectedMonthlyBalances,
+              );
 
               if (oldestDate == null || fileDate.isBefore(oldestDate)) {
                 oldestDate = fileDate;
-                oldestStartingBalance = PdfParserService.detectedStartingBalance;
+                oldestStartingBalance =
+                    PdfParserService.detectedStartingBalance;
               }
 
               // Copy original statement PDF to Application Documents directory
@@ -274,9 +284,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (!await savedDir.exists()) {
                   await savedDir.create(recursive: true);
                 }
-                final savedPdfPath = '${savedDir.path}/${_accountNumberController.text.trim()}_$periodKey.pdf';
+                final savedPdfPath =
+                    '${savedDir.path}/${_accountNumberController.text.trim()}_$periodKey.pdf';
                 await File(filePath).copy(savedPdfPath);
-                
+
                 provider.setPdfPath(periodKey, savedPdfPath);
               }
             }
@@ -298,11 +309,18 @@ class _SettingsPageState extends State<SettingsPage> {
         if (allTransactions.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Tidak ada transaksi yang ditemukan dalam file yang diproses.'),
+              content: Text(
+                'Tidak ada transaksi yang ditemukan dalam file yang diproses.',
+              ),
             ),
           );
         } else {
-          provider.processNewPdfTransactions(allTransactions, "", "", newMonthlyBalances);
+          provider.processNewPdfTransactions(
+            allTransactions,
+            "",
+            "",
+            newMonthlyBalances,
+          );
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -324,7 +342,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   PdfParserService.detectedAccountNumber;
             }
             if (oldestStartingBalance != null) {
-              _balanceController.text = oldestStartingBalance.toStringAsFixed(0);
+              _balanceController.text = oldestStartingBalance.toStringAsFixed(
+                0,
+              );
             } else {
               _balanceController.text = PdfParserService.detectedStartingBalance
                   .toStringAsFixed(0);
@@ -349,8 +369,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
   String getIndonesianMonth(int month) {
     const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
     if (month >= 1 && month <= 12) return months[month - 1];
     return '';
@@ -710,7 +740,10 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                         leading: CircleAvatar(
                           backgroundColor: Colors.red.shade50,
-                          child: const Icon(Icons.delete_sweep, color: Colors.red),
+                          child: const Icon(
+                            Icons.delete_sweep,
+                            color: Colors.red,
+                          ),
                         ),
                         title: const Text(
                           'Hapus Data PDF',
@@ -730,7 +763,10 @@ class _SettingsPageState extends State<SettingsPage> {
                           color: Colors.red,
                         ),
                         onTap: () async {
-                          final provider = Provider.of<TransactionProvider>(context, listen: false);
+                          final provider = Provider.of<TransactionProvider>(
+                            context,
+                            listen: false,
+                          );
                           final periods = provider.pdfPaths.keys.toList();
 
                           if (periods.isEmpty) {
@@ -738,7 +774,9 @@ class _SettingsPageState extends State<SettingsPage> {
                               context: context,
                               builder: (context) => AlertDialog(
                                 title: const Text('Hapus Data PDF'),
-                                content: const Text('Tidak ada data PDF mutasi yang diunggah.'),
+                                content: const Text(
+                                  'Tidak ada data PDF mutasi yang diunggah.',
+                                ),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context),
@@ -755,56 +793,100 @@ class _SettingsPageState extends State<SettingsPage> {
                             builder: (context) {
                               return StatefulBuilder(
                                 builder: (context, setStateDialog) {
-                                  final currentPeriods = provider.pdfPaths.keys.toList();
-                                  currentPeriods.sort((a, b) => b.compareTo(a)); // Sort descending by default
+                                  final currentPeriods = provider.pdfPaths.keys
+                                      .toList();
+                                  currentPeriods.sort(
+                                    (a, b) => b.compareTo(a),
+                                  ); // Sort descending by default
                                   return AlertDialog(
-                                    title: const Text('Pilih PDF untuk Dihapus'),
+                                    title: const Text(
+                                      'Pilih PDF untuk Dihapus',
+                                    ),
                                     content: currentPeriods.isEmpty
-                                        ? const Text('Semua data PDF telah dihapus.')
+                                        ? const Text(
+                                            'Semua data PDF telah dihapus.',
+                                          )
                                         : Container(
                                             width: double.maxFinite,
-                                            constraints: const BoxConstraints(maxHeight: 250),
+                                            constraints: const BoxConstraints(
+                                              maxHeight: 250,
+                                            ),
                                             child: ListView.builder(
                                               shrinkWrap: true,
                                               itemCount: currentPeriods.length,
                                               itemBuilder: (context, index) {
-                                                final period = currentPeriods[index];
+                                                final period =
+                                                    currentPeriods[index];
                                                 return ListTile(
-                                                  contentPadding: EdgeInsets.zero,
-                                                  title: Text(period.toUpperCase()),
+                                                  contentPadding:
+                                                      EdgeInsets.zero,
+                                                  title: Text(
+                                                    period.toUpperCase(),
+                                                  ),
                                                   trailing: IconButton(
-                                                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                                    icon: const Icon(
+                                                      Icons.delete_outline,
+                                                      color: Colors.red,
+                                                    ),
                                                     onPressed: () async {
                                                       final confirmDelete = await showDialog<bool>(
                                                         context: context,
                                                         builder: (context) => AlertDialog(
-                                                          title: const Text('Hapus Periode?'),
-                                                          content: Text('Hapus data transaksi untuk periode $period? Tindakan ini tidak dapat dibatalkan.'),
+                                                          title: const Text(
+                                                            'Hapus Periode?',
+                                                          ),
+                                                          content: Text(
+                                                            'Hapus data transaksi untuk periode $period? Tindakan ini tidak dapat dibatalkan.',
+                                                          ),
                                                           actions: [
                                                             TextButton(
-                                                              onPressed: () => Navigator.pop(context, false),
-                                                              child: const Text('Batal'),
+                                                              onPressed: () =>
+                                                                  Navigator.pop(
+                                                                    context,
+                                                                    false,
+                                                                  ),
+                                                              child: const Text(
+                                                                'Batal',
+                                                              ),
                                                             ),
                                                             ElevatedButton(
-                                                              onPressed: () => Navigator.pop(context, true),
+                                                              onPressed: () =>
+                                                                  Navigator.pop(
+                                                                    context,
+                                                                    true,
+                                                                  ),
                                                               style: ElevatedButton.styleFrom(
-                                                                backgroundColor: Colors.red,
-                                                                foregroundColor: Colors.white,
+                                                                backgroundColor:
+                                                                    Colors.red,
+                                                                foregroundColor:
+                                                                    Colors
+                                                                        .white,
                                                               ),
-                                                              child: const Text('Hapus'),
+                                                              child: const Text(
+                                                                'Hapus',
+                                                              ),
                                                             ),
                                                           ],
                                                         ),
                                                       );
 
-                                                      if (confirmDelete == true) {
-                                                        provider.deleteTransactionsForPeriod(period);
+                                                      if (confirmDelete ==
+                                                          true) {
+                                                        provider
+                                                            .deleteTransactionsForPeriod(
+                                                              period,
+                                                            );
                                                         setStateDialog(() {});
                                                         if (context.mounted) {
-                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                          ScaffoldMessenger.of(
+                                                            context,
+                                                          ).showSnackBar(
                                                             SnackBar(
-                                                              content: Text('Data transaksi periode $period telah dihapus.'),
-                                                              backgroundColor: Colors.red,
+                                                              content: Text(
+                                                                'Data transaksi periode $period telah dihapus.',
+                                                              ),
+                                                              backgroundColor:
+                                                                  Colors.red,
                                                             ),
                                                           );
                                                         }
@@ -826,22 +908,37 @@ class _SettingsPageState extends State<SettingsPage> {
                                             final confirmAll = await showDialog<bool>(
                                               context: context,
                                               builder: (context) => AlertDialog(
-                                                title: const Text('Hapus Semua Data?'),
+                                                title: const Text(
+                                                  'Hapus Semua Data?',
+                                                ),
                                                 content: const Text(
                                                   'Ini akan menghapus semua data transaksi yang saat ini dimuat di aplikasi. Tindakan ini tidak dapat dibatalkan. Apakah Anda yakin?',
                                                 ),
                                                 actions: [
                                                   TextButton(
-                                                    onPressed: () => Navigator.pop(context, false),
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                          context,
+                                                          false,
+                                                        ),
                                                     child: const Text('Batal'),
                                                   ),
                                                   ElevatedButton(
-                                                    onPressed: () => Navigator.pop(context, true),
-                                                    style: ElevatedButton.styleFrom(
-                                                      backgroundColor: Colors.red,
-                                                      foregroundColor: Colors.white,
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                          context,
+                                                          true,
+                                                        ),
+                                                    style:
+                                                        ElevatedButton.styleFrom(
+                                                          backgroundColor:
+                                                              Colors.red,
+                                                          foregroundColor:
+                                                              Colors.white,
+                                                        ),
+                                                    child: const Text(
+                                                      'Hapus Semua',
                                                     ),
-                                                    child: const Text('Hapus Semua'),
                                                   ),
                                                 ],
                                               ),
@@ -850,10 +947,16 @@ class _SettingsPageState extends State<SettingsPage> {
                                             if (confirmAll == true) {
                                               provider.clearTransactions();
                                               if (context.mounted) {
-                                                Navigator.pop(context); // Close selection dialog
-                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                Navigator.pop(
+                                                  context,
+                                                ); // Close selection dialog
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
                                                   const SnackBar(
-                                                    content: Text('Semua data transaksi PDF telah dihapus.'),
+                                                    content: Text(
+                                                      'Semua data transaksi PDF telah dihapus.',
+                                                    ),
                                                     backgroundColor: Colors.red,
                                                   ),
                                                 );
