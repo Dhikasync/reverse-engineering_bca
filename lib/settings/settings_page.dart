@@ -9,12 +9,14 @@ import '../models/transaction.dart';
 
 class SettingsPage extends StatefulWidget {
   final String initialName;
+  final String initialBcaId;
   final String initialAccountNumber;
   final String initialBalance;
 
   const SettingsPage({
     super.key,
     required this.initialName,
+    required this.initialBcaId,
     required this.initialAccountNumber,
     required this.initialBalance,
   });
@@ -25,6 +27,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late TextEditingController _nameController;
+  late TextEditingController _bcaIdController;
   late TextEditingController _accountNumberController;
   late TextEditingController _balanceController;
   final TextEditingController _passwordController = TextEditingController();
@@ -40,6 +43,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
+    _bcaIdController = TextEditingController(text: widget.initialBcaId);
     _accountNumberController = TextEditingController(
       text: widget.initialAccountNumber,
     );
@@ -48,6 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
     // Listen to any change
     for (final c in [
       _nameController,
+      _bcaIdController,
       _accountNumberController,
       _balanceController,
     ]) {
@@ -63,6 +68,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void dispose() {
     for (final c in [
       _nameController,
+      _bcaIdController,
       _accountNumberController,
       _balanceController,
       _passwordController,
@@ -76,9 +82,10 @@ class _SettingsPageState extends State<SettingsPage> {
   void _saveAll() {
     final provider = Provider.of<TransactionProvider>(context, listen: false);
 
-    // Save User Profile (Name, Account, Balance)
+    // Save User Profile (Name, BCA ID, Account, Balance)
     provider.setUserProfile(
       _nameController.text.trim(),
+      _bcaIdController.text.trim(),
       _accountNumberController.text.trim(),
       _balanceController.text.trim(),
     );
@@ -97,6 +104,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         Navigator.pop(context, {
           'name': _nameController.text,
+          'bcaId': _bcaIdController.text,
           'accountNumber': _accountNumberController.text,
           'balance': _balanceController.text,
         });
@@ -526,8 +534,14 @@ class _SettingsPageState extends State<SettingsPage> {
                           children: [
                             _buildTextField(
                               controller: _nameController,
-                              label: 'Nama',
+                              label: 'Nama Lengkap',
                               icon: Icons.person_outline,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _bcaIdController,
+                              label: 'Sensor BCA ID (ex: HI********O)',
+                              icon: Icons.badge_outlined,
                             ),
                             const SizedBox(height: 16),
                             _buildTextField(

@@ -9,6 +9,7 @@ import 'package:reverse_engineering_bca/providers/transaction_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // 2. Import halaman password yang tadi dibuat (sesuaikan path-nya jika ditaruh di dalam folder)
 import 'package:reverse_engineering_bca/authentication/login_password_page.dart';
+import 'package:reverse_engineering_bca/start/main_start.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,8 +45,8 @@ class MyBcaCloneApp extends StatelessWidget {
         textTheme: GoogleFonts.openSansTextTheme(Theme.of(context).textTheme),
         primaryColor: const Color(0xFF005BAC),
       ),
-      // 6. Logika penentu: Kalau sudah aktivasi langsung ke Home, kalau belum ke Password
-      home: isActivated ? const MyBcaHomeScreen() : const LoginPasswordPage(),
+      // 6. Tampilkan Splash Screen terlebih dahulu
+      home: MainStartScreen(isActivated: isActivated),
     );
   }
 }

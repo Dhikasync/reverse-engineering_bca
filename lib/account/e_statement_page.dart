@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:reverse_engineering_bca/account/e_statement_viewer_page.dart';
 import '../providers/transaction_provider.dart';
 import 'package:reverse_engineering_bca/periode/pilih_periode_page.dart';
+import '../widgets/animated_bca_logo.dart';
 
 class EStatementPage extends StatefulWidget {
   final String userName;
@@ -82,7 +83,7 @@ class _EStatementPageState extends State<EStatementPage> {
         return const Dialog(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          child: Center(child: _AnimatedBCALogo()),
+          child: Center(child: AnimatedBCALogo()),
         );
       },
     );
@@ -414,86 +415,6 @@ class _EStatementPageState extends State<EStatementPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _AnimatedBCALogo extends StatefulWidget {
-  const _AnimatedBCALogo();
-
-  @override
-  __AnimatedBCALogoState createState() => __AnimatedBCALogoState();
-}
-
-class __AnimatedBCALogoState extends State<_AnimatedBCALogo>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Widget logoAsset = Image.asset(
-      'assets/images/logo_bca_icon.png',
-      width: 80,
-      height: 80,
-      fit: BoxFit.contain,
-    );
-
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            ShaderMask(
-              shaderCallback: (Rect bounds) {
-                return SweepGradient(
-                  colors: const [
-                    Colors.transparent,
-                    Colors.transparent,
-                    Colors.white,
-                    Colors.white,
-                  ],
-                  stops: const [0.0, 0.4, 0.45, 1.0],
-                  transform: GradientRotation(_controller.value * 2 * math.pi),
-                ).createShader(bounds);
-              },
-              blendMode: BlendMode.dstIn,
-              child: logoAsset,
-            ),
-            ShaderMask(
-              shaderCallback: (Rect bounds) {
-                return SweepGradient(
-                  colors: const [
-                    Colors.transparent,
-                    Colors.transparent,
-                    Color(0xFF005DAA),
-                    Color(0xFFF2C94C),
-                  ],
-                  stops: const [0.0, 0.85, 0.95, 1.0],
-                  transform: GradientRotation(_controller.value * 2 * math.pi),
-                ).createShader(bounds);
-              },
-              blendMode: BlendMode.srcIn,
-              child: logoAsset,
-            ),
-          ],
-        );
-      },
     );
   }
 }

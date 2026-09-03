@@ -18,6 +18,7 @@ class TransactionProvider with ChangeNotifier {
   List<String> _address = [];
 
   String _userName = 'Default';
+  String _bcaId = 'DE********T';
   String _accountNumber = '0240219280';
   String _balance = '154830048';
 
@@ -34,6 +35,7 @@ class TransactionProvider with ChangeNotifier {
     });
     return sorted;
   }
+
   String get activeMonth => _activeMonth;
   String get activeYear => _activeYear;
   double get startingBalance => _startingBalance;
@@ -42,17 +44,19 @@ class TransactionProvider with ChangeNotifier {
   List<String> get address => _address;
 
   String get userName => _userName;
+  String get bcaId => _bcaId;
   String get accountNumber => _accountNumber;
   String get balance => _balance;
 
-  void setUserProfile(String name, String accountNum, String bal) {
+  void setUserProfile(String name, String id, String accountNum, String bal) {
     _userName = name;
+    _bcaId = id;
     _accountNumber = accountNum;
     _balance = bal;
     notifyListeners();
     saveData();
   }
-  
+
   double getStartingBalanceForMonth(String month, String year) {
     String indoMonth = mapMonthToIndonesian(month);
     return _monthlyStartingBalances["$indoMonth $year"] ?? _startingBalance;
@@ -198,9 +202,9 @@ class TransactionProvider with ChangeNotifier {
   void processNewPdfTransactions(
     List<TransactionModel> newTransactions,
     String pdfMonth,
-    String pdfYear,
-    [Map<String, double>? newMonthlyBalances]
-  ) {
+    String pdfYear, [
+    Map<String, double>? newMonthlyBalances,
+  ]) {
     _activeMonth = pdfMonth;
     _activeYear = pdfYear;
     _transactions.addAll(newTransactions);
@@ -213,7 +217,7 @@ class TransactionProvider with ChangeNotifier {
         _startingBalance = PdfParserService.detectedStartingBalance;
       }
     }
-    
+
     if (newMonthlyBalances != null) {
       _monthlyStartingBalances.addAll(newMonthlyBalances);
     }
@@ -353,45 +357,56 @@ class TransactionProvider with ChangeNotifier {
   // --- PERSISTENCE LOGIC (shared_preferences) ---
   Future<void> saveData() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Save settings
     prefs.setString('branch', _branch);
     prefs.setStringList('address', _address);
     prefs.setString('accountType', _accountType);
     prefs.setDouble('startingBalance', _startingBalance);
     prefs.setString('userName', _userName);
+    prefs.setString('bcaId', _bcaId);
     prefs.setString('accountNumber', _accountNumber);
     prefs.setString('balance', _balance);
-    
+
     // Save monthly starting balances map (serialize as JSON)
-    prefs.setString('monthlyStartingBalances', jsonEncode(_monthlyStartingBalances));
+    prefs.setString(
+      'monthlyStartingBalances',
+      jsonEncode(_monthlyStartingBalances),
+    );
 
     // Save pdf paths
     prefs.setString('pdfPaths', jsonEncode(_pdfPaths));
 
     // Save transactions (serialize list to JSON string)
-    final String transactionsJson = jsonEncode(_transactions.map((tx) => tx.toJson()).toList());
+    final String transactionsJson = jsonEncode(
+      _transactions.map((tx) => tx.toJson()).toList(),
+    );
     prefs.setString('transactions', transactionsJson);
   }
 
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     // Load settings
     _branch = prefs.getString('branch') ?? '';
     _address = prefs.getStringList('address') ?? [];
     _accountType = prefs.getString('accountType') ?? 'REKENING TAHAPAN';
     _startingBalance = prefs.getDouble('startingBalance') ?? 734147.95;
     _userName = prefs.getString('userName') ?? 'Default';
+    _bcaId = prefs.getString('bcaId') ?? 'DE********T';
     _accountNumber = prefs.getString('accountNumber') ?? '0240219280';
     _balance = prefs.getString('balance') ?? '154830048';
-    
+
     // Load monthly starting balances map
-    final String? monthlyBalancesJson = prefs.getString('monthlyStartingBalances');
+    final String? monthlyBalancesJson = prefs.getString(
+      'monthlyStartingBalances',
+    );
     if (monthlyBalancesJson != null) {
       try {
         final decoded = jsonDecode(monthlyBalancesJson) as Map<String, dynamic>;
-        _monthlyStartingBalances = decoded.map((key, value) => MapEntry(key, (value as num).toDouble()));
+        _monthlyStartingBalances = decoded.map(
+          (key, value) => MapEntry(key, (value as num).toDouble()),
+        );
       } catch (e) {
         debugPrint("Error parsing monthly balances: $e");
       }
@@ -402,7 +417,9 @@ class TransactionProvider with ChangeNotifier {
     if (pdfPathsJson != null) {
       try {
         final decoded = jsonDecode(pdfPathsJson) as Map<String, dynamic>;
-        _pdfPaths = decoded.map((key, value) => MapEntry(key, value.toString()));
+        _pdfPaths = decoded.map(
+          (key, value) => MapEntry(key, value.toString()),
+        );
       } catch (e) {
         debugPrint("Error parsing pdf paths: $e");
       }
@@ -413,13 +430,15 @@ class TransactionProvider with ChangeNotifier {
     if (transactionsJson != null) {
       try {
         final List<dynamic> decoded = jsonDecode(transactionsJson);
-        _transactions = decoded.map((item) => TransactionModel.fromJson(item)).toList();
+        _transactions = decoded
+            .map((item) => TransactionModel.fromJson(item))
+            .toList();
         _sortTransactions();
       } catch (e) {
         debugPrint("Error parsing transactions: $e");
       }
     }
-    
+
     notifyListeners();
   }
 }

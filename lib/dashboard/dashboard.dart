@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:reverse_engineering_bca/providers/transaction_provider.dart';
+import 'package:reverse_engineering_bca/authentication/login_page.dart';
 
 class MyBcaHomeScreen extends StatefulWidget {
   const MyBcaHomeScreen({super.key});
@@ -21,6 +22,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
   final Color bcaLightBlue = const Color(0xFF1CB5E0);
 
   String userName = 'Default';
+  String bcaId = 'DE********T';
   String accountNumber = '0240219280';
   String balance = '154830048';
   bool isBalanceVisible = false;
@@ -63,6 +65,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
     scale = (MediaQuery.of(context).size.width / 430.0).clamp(0.7, 1.0);
     final provider = context.watch<TransactionProvider>();
     userName = provider.userName;
+    bcaId = provider.bcaId;
     accountNumber = provider.accountNumber;
     balance = provider.balance;
 
@@ -140,6 +143,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                     MaterialPageRoute(
                       builder: (context) => SettingsPage(
                         initialName: userName,
+                        initialBcaId: bcaId,
                         initialAccountNumber: accountNumber,
                         initialBalance: balance,
                       ),
@@ -148,6 +152,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                   if (result != null && result is Map) {
                     setState(() {
                       userName = result['name'];
+                      bcaId = result['bcaId'];
                       accountNumber = result['accountNumber'];
                       balance = result['balance'];
                     });
@@ -164,12 +169,68 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                         <path d="M511.343,252.655c-0.435-1.05-1.058-1.988-1.852-2.782l-85.325-85.333c-3.337-3.336-8.73-3.336-12.066,0 c-3.337,3.337-3.337,8.73,0,12.066l70.767,70.775H325.000c-4.71,0-8.533,3.823-8.533,8.533c0,4.71,3.823,8.533,8.533,8.533 h157.868L412.1,335.215c-3.337,3.337-3.337,8.73,0,12.066c1.664,1.664,3.849,2.5,6.033,2.5c2.185,0,4.369-0.836,6.033-2.5 l85.325-85.325c0.794-0.794,1.417-1.732,1.852-2.782C512.205,257.093,512.205,254.738,511.343,252.655z"/>
                       </g></g></g>
                     </svg>''',
-                  width: 22 * scale, 
+                  width: 22 * scale,
                   height: 22 * scale,
-                  colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
                 ),
                 onPressed: () {
-                  // Aksi ketika tombol logout ditekan
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16.0),
+                        ),
+                        title: Text(
+                          'Konfirmasi',
+                          style: GoogleFonts.openSans(
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF005BAC),
+                          ),
+                        ),
+                        content: Text(
+                          'Apakah Anda yakin ingin keluar dari aplikasi?',
+                          style: GoogleFonts.openSans(color: Colors.black87),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              'Tidak',
+                              style: GoogleFonts.openSans(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              // Tutup dialog
+                              Navigator.pop(context);
+                              // Kembali ke halaman Login
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginPage(),
+                                ),
+                                (route) => false,
+                              );
+                            },
+                            child: Text(
+                              'Ya',
+                              style: GoogleFonts.openSans(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF005BAC),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
                 },
               ),
             ],
@@ -778,11 +839,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
         'label': 'Produk\nPerbankan',
         'isNew': false,
       },
-      {
-        'customIcon': buildProteksiIcon(),
-        'label': 'Proteksi',
-        'isNew': false,
-      },
+      {'customIcon': buildProteksiIcon(), 'label': 'Proteksi', 'isNew': false},
       {
         'customIcon': buildSemuaFiturIcon(),
         'label': 'Semua Fitur',
@@ -1009,7 +1066,10 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                           '''<svg id="Capa_1" enable-background="new 0 0 512 512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><g><path d="m291.88 507.606c-5.858-5.858-5.858-15.355 0-21.213 127.039-127.039 127.039-333.747 0-460.786-5.858-5.858-5.858-15.355 0-21.213s15.355-5.858 21.213 0c33.962 33.962 60.26 73.568 78.163 117.717 17.289 42.635 26.056 87.682 26.056 133.89 0 46.207-8.767 91.254-26.056 133.89-17.903 44.149-44.201 83.755-78.163 117.717-5.857 5.856-15.355 5.856-21.213-.002z"/><path d="m227.614 443.34c-5.858-5.858-5.858-15.355 0-21.213 91.602-91.602 91.602-240.651 0-332.253-5.858-5.858-5.858-15.355 0-21.213s15.355-5.858 21.213 0c50.04 50.04 77.598 116.572 77.599 187.34 0 70.768-27.559 137.3-77.599 187.34-5.858 5.856-15.355 5.856-21.213-.001z"/><path d="m163.347 379.073c-5.858-5.858-5.858-15.355 0-21.213 56.166-56.166 56.166-147.554 0-203.72-5.858-5.858-5.858-15.355 0-21.213s15.355-5.858 21.213 0c67.863 67.863 67.863 178.283 0 246.146-5.857 5.858-15.355 5.858-21.213 0z"/><path d="m99.08 314.806c-5.858-5.858-5.858-15.355 0-21.213 20.729-20.729 20.729-54.458 0-75.187-5.858-5.858-5.858-15.355 0-21.213s15.355-5.858 21.213 0c32.426 32.426 32.426 85.187 0 117.613-5.857 5.858-15.355 5.858-21.213 0z"/></g></svg>''',
                           width: 26 * scale,
                           height: 26 * scale,
-                          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ),
                     ),
@@ -1027,10 +1087,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
               ),
               Row(
                 children: [
-                  Image.asset(
-                    'assets/images/qris.png',
-                    height: 72 * scale,
-                  ),
+                  Image.asset('assets/images/qris.png', height: 72 * scale),
                   SizedBox(width: 8 * scale),
                   Icon(
                     Icons.chevron_right,
@@ -1158,6 +1215,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                             MaterialPageRoute(
                               builder: (context) => SettingsPage(
                                 initialName: userName,
+                                initialBcaId: bcaId,
                                 initialAccountNumber: accountNumber,
                                 initialBalance: balance,
                               ),
@@ -1166,6 +1224,7 @@ class _MyBcaHomeScreenState extends State<MyBcaHomeScreen> {
                           if (result != null && result is Map) {
                             setState(() {
                               userName = result['name'];
+                              bcaId = result['bcaId'];
                               accountNumber = result['accountNumber'];
                               balance = result['balance'];
                             });
