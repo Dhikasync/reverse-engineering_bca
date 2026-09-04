@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'login_password_page.dart';
+import 'dart:async';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../providers/transaction_provider.dart';
@@ -47,19 +48,31 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
           SafeArea(
+            bottom: false, // Biarkan footer menempel sampai bawah layar
             child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildAppBar(),
-                  const _LoginPromoCarousel(),
-                  SizedBox(height: 8 * scale),
-                  _buildGreeting(),
-                  SizedBox(height: 12 * scale),
-                  _buildLoginCard(),
-                  SizedBox(height: 12 * scale),
-                  _buildOtherServices(),
-                  const SizedBox(height: 16),
-                ],
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight:
+                      MediaQuery.of(context).size.height -
+                      MediaQuery.of(context)
+                          .padding
+                          .top, // Jangan kurangi bottom padding agar bisa mentok
+                ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      _buildAppBar(),
+                      const _LoginPromoCarousel(),
+                      SizedBox(height: 8 * scale),
+                      _buildGreeting(),
+                      SizedBox(height: 12 * scale),
+                      _buildLoginCard(),
+                      const Spacer(),
+                      _buildOtherServices(),
+                      // SizedBox dihapus agar footer mentok bawah
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -72,9 +85,9 @@ class _LoginPageState extends State<LoginPage> {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         20.0 * scale,
-        12.0 * scale,
+        8.0 * scale, // Kurangi top padding agar lebih ke atas
         20.0 * scale,
-        0, // Hilangkan padding bawah agar tidak terlalu jauh
+        0,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -82,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
         children: [
           Image.asset(
             'assets/images/mybca-logo-remove.png',
-            height: 120 * scale,
+            height: 84 * scale, // Lebih besar dari 64, lebih kecil dari 120
             errorBuilder: (context, error, stackTrace) => Text(
               "myBCA",
               style: GoogleFonts.openSans(
@@ -94,18 +107,20 @@ class _LoginPageState extends State<LoginPage> {
           ),
           Row(
             children: [
-              Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  icon: Icon(
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  width: 32 * scale,
+                  height: 32 * scale,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
                     Icons.headset_mic_outlined,
                     color: const Color(0xFF005BAC),
-                    size: 20 * scale,
+                    size: 18 * scale,
                   ),
-                  onPressed: () {},
                 ),
               ),
               SizedBox(width: 12 * scale),
@@ -235,10 +250,64 @@ class _LoginPageState extends State<LoginPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildQuickAction(Icons.credit_card, 'Flazz'),
-                      _buildQuickAction(Icons.wifi, 'NFC Pay'),
-                      _buildQuickAction(Icons.qr_code_scanner, 'Scan QRIS'),
-                      _buildQuickAction(Icons.receipt_long, 'QRIS Transfer'),
+                      _buildQuickAction(
+                        Container(
+                          width: 24 * scale,
+                          height: 16 * scale,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF004D8E),
+                            borderRadius: BorderRadius.circular(3 * scale),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Positioned(
+                                top: 1 * scale,
+                                left: 1 * scale,
+                                child: Icon(
+                                  Icons.wifi,
+                                  color: const Color(0xFF1CB5E0),
+                                  size: 8 * scale,
+                                ),
+                              ),
+                              Text(
+                                'Flazz',
+                                style: GoogleFonts.openSans(
+                                  color: Colors.white,
+                                  fontSize: 6 * scale,
+                                  fontStyle: FontStyle.italic,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        'Flazz',
+                      ),
+                      _buildQuickAction(
+                        Image.asset(
+                          'assets/images/nfc-pay.png',
+                          width: 32 * scale,
+                          height: 32 * scale,
+                        ),
+                        'NFC Pay',
+                      ),
+                      _buildQuickAction(
+                        Image.asset(
+                          'assets/images/scan-qris.png',
+                          width: 32 * scale,
+                          height: 32 * scale,
+                        ),
+                        'Scan QRIS',
+                      ),
+                      _buildQuickAction(
+                        Image.asset(
+                          'assets/images/qris-transfer.png',
+                          width: 32 * scale,
+                          height: 32 * scale,
+                        ),
+                        'QRIS Transfer',
+                      ),
                     ],
                   ),
                 ),
@@ -350,24 +419,28 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildQuickAction(IconData icon, String label) {
+  Widget _buildQuickAction(Widget iconWidget, String label) {
     return Column(
       children: [
-        Container(
-          width: 44 * scale,
-          height: 44 * scale,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFFF4F7FA),
-                Color(0xFFE4EBF3),
-              ], // Gradasi abu-abu kebiruan
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        Transform.rotate(
+          angle: 0.785398, // 45 degrees
+          child: Container(
+            width: 44 * scale,
+            height: 44 * scale,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE5F6FA), // Light blue like dashboard
+              borderRadius: BorderRadius.circular(10 * scale),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.07),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            shape: BoxShape.circle,
+            child: Transform.rotate(angle: -0.785398, child: iconWidget),
           ),
-          child: Icon(icon, color: const Color(0xFF005BAC), size: 24 * scale),
         ),
         SizedBox(height: 8 * scale),
         Text(
@@ -419,34 +492,56 @@ class _LoginPageState extends State<LoginPage> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildServiceItem(Icons.home, 'Pengajuan\nKPR', Colors.amber),
                 _buildServiceItem(
-                  Icons.security,
+                  Image.asset('assets/images/kpr.png'),
+                  'Pengajuan\nKPR',
+                ),
+                _buildServiceItem(
+                  Image.asset('assets/images/big.png'),
                   'BIG by BCA\nInsurance',
-                  const Color(0xFF005BAC),
                 ),
                 _buildServiceItem(
-                  Icons.health_and_safety,
+                  Image.asset('assets/images/bca-life.png'),
                   'BCA Life',
-                  Colors.teal,
                 ),
                 _buildServiceItem(
-                  Icons.shopping_bag,
+                  Image.asset('assets/images/blu.png'),
                   'blu by\nBCA',
-                  Colors.blue,
                 ),
                 SizedBox(width: 8 * scale),
               ],
             ),
           ),
+          SizedBox(height: 24 * scale),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: const Color(0xFF005BAC),
+                size: 18 * scale,
+              ),
+              SizedBox(width: 8 * scale),
+              Text(
+                'About myBCA',
+                style: GoogleFonts.openSans(
+                  color: const Color(0xFF005BAC),
+                  fontSize: 16 * scale,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8 * scale + MediaQuery.of(context).padding.bottom),
         ],
       ),
     );
   }
 
-  Widget _buildServiceItem(IconData icon, String label, Color iconColor) {
+  Widget _buildServiceItem(Widget iconWidget, String label) {
     return Container(
       width: 100 * scale,
+      height: 105 * scale,
       margin: EdgeInsets.only(right: 12 * scale),
       padding: EdgeInsets.all(12 * scale),
       decoration: BoxDecoration(
@@ -464,7 +559,11 @@ class _LoginPageState extends State<LoginPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: iconColor, size: 28 * scale),
+          SizedBox(
+            width: 28 * scale,
+            height: 28 * scale,
+            child: FittedBox(fit: BoxFit.contain, child: iconWidget),
+          ),
           SizedBox(height: 8 * scale),
           Text(
             label,
@@ -492,15 +591,44 @@ class _LoginPromoCarousel extends StatefulWidget {
 }
 
 class _LoginPromoCarouselState extends State<_LoginPromoCarousel> {
-  final PageController _pageController = PageController(viewportFraction: 0.9);
-  int _currentPage = 0;
+  // Start at a large multiple of 5 so user can swipe left infinitely too
+  int _currentPage = 1000;
+  late PageController _pageController;
+  Timer? _timer;
   double scale = 1.0;
 
-  // Empty images for now
-  final List<String> _promoItems = ['', '', ''];
+  final List<String> _promoItems = [
+    'assets/images/promo-1.jpeg',
+    'assets/images/promo-2.jpeg',
+    'assets/images/promo-3.jpeg',
+    'assets/images/promo-4.jpeg',
+    'assets/images/promo-5.jpeg',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(
+      viewportFraction: 0.9,
+      initialPage: _currentPage,
+    );
+
+    _timer = Timer.periodic(const Duration(seconds: 3), (Timer timer) {
+      _currentPage++; // Selalu bertambah, tidak pernah reset ke 0
+
+      if (_pageController.hasClients) {
+        _pageController.animateToPage(
+          _currentPage,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -513,15 +641,20 @@ class _LoginPromoCarouselState extends State<_LoginPromoCarousel> {
       height: 160 * scale,
       child: PageView.builder(
         controller: _pageController,
-        itemCount: _promoItems.length,
+        onPageChanged: (int index) {
+          _currentPage = index;
+        },
+        // itemCount dihilangkan agar bisa scroll tak terbatas (infinite loop)
         itemBuilder: (context, index) {
+          // Gunakan modulus untuk mengambil index array dengan aman
+          final int itemIndex = index % _promoItems.length;
+
           return Container(
             margin: EdgeInsets.symmetric(
               horizontal: 8.0 * scale,
               vertical: 8.0 * scale,
             ),
             decoration: BoxDecoration(
-              color: const Color(0xFF005BAC), // Placeholder color
               borderRadius: BorderRadius.circular(16 * scale),
               boxShadow: [
                 BoxShadow(
@@ -530,15 +663,9 @@ class _LoginPromoCarouselState extends State<_LoginPromoCarousel> {
                   offset: Offset(0, 3 * scale),
                 ),
               ],
-            ),
-            child: Center(
-              child: Text(
-                'Promo Image Placeholder\n(Kosong)',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.openSans(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+              image: DecorationImage(
+                image: AssetImage(_promoItems[itemIndex]),
+                fit: BoxFit.cover,
               ),
             ),
           );

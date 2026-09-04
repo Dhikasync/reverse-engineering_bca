@@ -7,8 +7,8 @@ import 'package:reverse_engineering_bca/providers/transaction_provider.dart';
 
 // 1. Tambahkan import shared_preferences
 import 'package:shared_preferences/shared_preferences.dart';
-// 2. Import halaman password yang tadi dibuat (sesuaikan path-nya jika ditaruh di dalam folder)
-import 'package:reverse_engineering_bca/authentication/login_password_page.dart';
+// 2. Import halaman
+import 'package:reverse_engineering_bca/authentication/license_page.dart';
 import 'package:reverse_engineering_bca/start/main_start.dart';
 
 void main() async {
@@ -21,11 +21,14 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final bool isActivated = prefs.getBool('isActivated') ?? false;
 
+  // Cek apakah aplikasi sudah diaktifkan dengan License Key
+  final bool isLicensed = prefs.getBool('isLicensed') ?? false;
+
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider.value(value: transactionProvider)],
-      // 4. Kirim status isActivated ke dalam widget utama
-      child: MyBcaCloneApp(isActivated: isActivated),
+      // 4. Kirim status isActivated dan isLicensed ke dalam widget utama
+      child: MyBcaCloneApp(isActivated: isActivated, isLicensed: isLicensed),
     ),
   );
 }
@@ -33,8 +36,13 @@ void main() async {
 class MyBcaCloneApp extends StatelessWidget {
   // 5. Buat variabel untuk menerima status dari void main
   final bool isActivated;
+  final bool isLicensed;
 
-  const MyBcaCloneApp({super.key, required this.isActivated});
+  const MyBcaCloneApp({
+    super.key,
+    required this.isActivated,
+    required this.isLicensed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +53,10 @@ class MyBcaCloneApp extends StatelessWidget {
         textTheme: GoogleFonts.openSansTextTheme(Theme.of(context).textTheme),
         primaryColor: const Color(0xFF005BAC),
       ),
-      // 6. Tampilkan Splash Screen terlebih dahulu
-      home: MainStartScreen(isActivated: isActivated),
+      // 6. Tampilkan License Page atau Splash Screen terlebih dahulu
+      home: isLicensed
+          ? MainStartScreen(isActivated: isActivated)
+          : SecretCodePage(isActivated: isActivated),
     );
   }
 }

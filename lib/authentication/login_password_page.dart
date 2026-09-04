@@ -65,8 +65,8 @@ class _LoginPasswordPageState extends State<LoginPasswordPage> {
     Navigator.pushAndRemoveUntil(
       context,
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 300),
-        reverseTransitionDuration: const Duration(milliseconds: 300),
+        transitionDuration: const Duration(milliseconds: 160),
+        reverseTransitionDuration: const Duration(milliseconds: 160),
         pageBuilder: (context, animation, secondaryAnimation) =>
             const MyBcaHomeScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
