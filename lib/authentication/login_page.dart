@@ -501,11 +501,35 @@ class _LoginPageState extends State<LoginPage> {
                   'BIG by BCA\nInsurance',
                 ),
                 _buildServiceItem(
-                  Image.asset('assets/images/bca-life.png'),
+                  Transform.translate(
+                    offset: const Offset(
+                      0,
+                      -10,
+                    ), // Geser sedikit ke atas (sebelum di-scale)
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        24,
+                      ), // Radius besar karena gambar di-scale down
+                      child: Image.asset(
+                        'assets/images/bca-life.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
                   'BCA Life',
                 ),
                 _buildServiceItem(
-                  Image.asset('assets/images/blu.png'),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Image.asset(
+                      'assets/images/blu.png',
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                   'blu by\nBCA',
                 ),
                 SizedBox(width: 8 * scale),
